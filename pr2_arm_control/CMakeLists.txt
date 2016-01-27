@@ -48,9 +48,9 @@ generate_messages(
 # TODO: fill in what other packages will need to use this package
 catkin_package(
   INCLUDE_DIRS src/pr2_arm_control
-  LIBRARIES pr2_arm_control
+  #LIBRARIES pr2_arm_control
   CATKIN_DEPENDS rospy
-  DEPENDS system_lib
+  #DEPENDS system_lib
 )
 
 ###########
