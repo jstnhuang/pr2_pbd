@@ -4,3 +4,4 @@ uint8 type
 string name
 geometry_msgs/Pose pose
 geometry_msgs/Vector3 dimensions
+sensor_msgs/PointCloud cluster

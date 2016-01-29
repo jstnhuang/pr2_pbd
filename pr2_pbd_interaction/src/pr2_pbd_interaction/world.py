@@ -27,6 +27,9 @@ from pr2_pbd_interaction.msg import Landmark, ArmState
 from pr2_pbd_interaction.response import Response
 from pr2_social_gaze.msg import GazeGoal
 
+# PCL
+# import pcl
+
 
 # ######################################################################
 # Module level constants
@@ -79,7 +82,7 @@ RECOGNITION_TIMEOUT_SECONDS = rospy.Duration(5.0)
 class WorldLandmark:
     '''Class for representing objects'''
 
-    def __init__(self, pose, index, dimensions, is_recognized):
+    def __init__(self, pose, index, dimensions, is_recognized, cluster=None):
         '''
         Args:
             pose (Pose): Position of bounding box
@@ -90,8 +93,12 @@ class WorldLandmark:
         self.index = index
         self.assigned_name = None
         self.is_recognized = is_recognized
+
+        rospy.loginfo( "[DEBUG] creating object with cluster of type")
+        rospy.loginfo("[DEBUG]" + str(type(cluster)))
+        # pcl_cloud = pcl.PointCloud()
         self.object = Landmark(
-            Landmark.TABLE_TOP, self.get_name(), pose, dimensions)
+            Landmark.TABLE_TOP, self.get_name(), pose, dimensions, cluster)
         self.menu_handler = MenuHandler()
         self.int_marker = None
         self.is_removed = False
@@ -310,6 +317,8 @@ class World:
         Returns:
             float
         '''
+        rospy.loginfo("[DEBUG] **** EVALUATING DISSIMILARITY ****")
+        rospy.loginfo("" + str(obj1.cluster))
         d1 = obj1.dimensions
         d2 = obj2.dimensions
         return norm(array([d1.x, d1.y, d1.z]) - array([d2.x, d2.y, d2.z]))
@@ -591,7 +600,7 @@ class World:
         if Response.gaze_client.get_state() != GoalStatus.SUCCEEDED:
             rospy.logerr('Could not look down to take table snapshot')
             return False
-        rospy.loginfo('Head is now (successfully) stairing at table.')
+        rospy.loginfo('Head is now (successfully) staring at table.')
 
         rospy.loginfo("waiting for segmentation service")
 
@@ -618,6 +627,10 @@ class World:
                                    self.marker_feedback_cb)
             self._im_server.applyChanges()
 
+            # cluster is of type sensor_msgs/PointCloud
+            # see (https://github.com/ros-interactive-manipulation/manipulation_msgs/blob/hydro-devel/msg/GraspableObject.msg)
+            # TODO(paramv): what is the reference frame of this cluster? 
+            #               I need it to be in the first quadrant, from the origin.
             for cluster in resp.clusters:
                 points = cluster.points
                 if (len(points) == 0):
@@ -634,7 +647,7 @@ class World:
                     maxZ = max(maxZ, pt.z)
                 self._add_new_object(Pose(Point((minX + maxX) / 2, (minY + maxY) / 2,
                                                 (minZ + maxZ) / 2), Quaternion(0, 0, 0, 1)),
-                                     Point(maxX - minX, maxY - minY, maxZ - minZ), False)
+                                     Point(maxX - minX, maxY - minY, maxZ - minZ), False, cluster=cluster)
             return True
 
         except rospy.ServiceException, e:
@@ -750,7 +763,7 @@ class World:
         World.objects = []
         self._lock.release()
 
-    def _add_new_object(self, pose, dimensions, is_recognized, mesh=None):
+    def _add_new_object(self, pose, dimensions, is_recognized, mesh=None, cluster = None):
         '''Maybe add a new object with the specified properties to our
         object list.
 
@@ -811,10 +824,10 @@ class World:
 
             # Actually add the object.
             self._add_new_object_internal(
-                pose, dimensions, is_recognized, mesh)
+                pose, dimensions, is_recognized, mesh, cluster)
             return True
 
-    def _add_new_object_internal(self, pose, dimensions, is_recognized, mesh):
+    def _add_new_object_internal(self, pose, dimensions, is_recognized, mesh, cluster=None):
         '''Does the 'internal' adding of an object with the passed
         properties. Call _add_new_object to do all pre-requisite checks
         first (it then calls this function).
@@ -827,7 +840,7 @@ class World:
         '''
         n_objects = len(World.objects)
         World.objects.append(WorldLandmark(
-            pose, n_objects, dimensions, is_recognized))
+            pose, n_objects, dimensions, is_recognized, cluster=cluster))
         int_marker = self._get_object_marker(len(World.objects) - 1)
         World.objects[-1].int_marker = int_marker
         self._im_server.insert(int_marker, self.marker_feedback_cb)
