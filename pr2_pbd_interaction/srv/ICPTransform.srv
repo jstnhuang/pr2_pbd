@@ -1,0 +1,5 @@
+sensor_msgs/PointCloud pc1
+sensor_msgs/PointCloud pc2
+----
+float64 fitness_score
+

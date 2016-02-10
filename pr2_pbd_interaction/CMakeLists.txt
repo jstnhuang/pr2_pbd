@@ -6,13 +6,21 @@ project(pr2_pbd_interaction)
 # TODO: remove all from COMPONENTS that are not catkin packages.
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  roscpp
   actionlib
   std_msgs
   geometry_msgs
   tf
   message_generation
   pr2_arm_control
+  pcl_conversions
+  pcl_ros
 )
+
+find_package(PCL 1.7 REQUIRED)
+include_directories(SYSTEM ${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 # include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 # CATKIN_MIGRATION: removed during catkin migration
@@ -42,6 +50,7 @@ add_message_files(
 
 add_service_files(
   FILES
+  ICPTransform.srv
   GetExperimentState.srv
   Ping.srv
 )
@@ -81,16 +90,16 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-# add_executable(pr2_pbd_node src/pr2_pbd_node.cpp)
+add_executable(pr2_pbd_icp nodes/ICPService.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(pr2_pbd_node pr2_pbd_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(pr2_pbd_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(pr2_pbd_icp
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##

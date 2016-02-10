@@ -27,6 +27,8 @@ from pr2_pbd_interaction.msg import Landmark, ArmState
 from pr2_pbd_interaction.response import Response
 from pr2_social_gaze.msg import GazeGoal
 
+from pr2_pbd_interaction.srv import ICPTransform
+
 # PCL
 # import pcl
 
@@ -169,6 +171,7 @@ class World:
             'tabletop_segmentation',
             TabletopSegmentation)
 
+       
         # rospy.wait_for_service('find_cluster_bounding_box')
         # self._bb_service = rospy.ServiceProxy(
         #     'find_cluster_bounding_box',
@@ -318,10 +321,21 @@ class World:
             float
         '''
         rospy.loginfo("[DEBUG] **** EVALUATING DISSIMILARITY ****")
-        rospy.loginfo("" + str(obj1.cluster))
-        d1 = obj1.dimensions
-        d2 = obj2.dimensions
-        return norm(array([d1.x, d1.y, d1.z]) - array([d2.x, d2.y, d2.z]))
+        # rospy.loginfo("" + str(obj1.cluster))
+        rospy.loginfo("Waiting for service icpTransform...")
+        rospy.wait_for_service('icpTransform')
+        _icp_service = rospy.ServiceProxy(
+            'icpTransform',
+            ICPTransform)
+        rospy.loginfo("Service icpTransform found!")
+        rospy.loginfo("Calling ICP service")
+        resp = _icp_service(obj1.cluster, obj2.cluster)
+        fitness = resp.fitness_score
+        rospy.loginfo("Fitness score was: " + str(fitness))
+        return fitness
+        # d1 = obj1.dimensions
+        # d2 = obj2.dimensions
+        # return norm(array([d1.x, d1.y, d1.z]) - array([d2.x, d2.y, d2.z]))
 
     @staticmethod
     def get_ref_from_name(ref_name):
