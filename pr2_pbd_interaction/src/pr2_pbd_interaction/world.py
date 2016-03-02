@@ -84,7 +84,7 @@ RECOGNITION_TIMEOUT_SECONDS = rospy.Duration(5.0)
 class WorldLandmark:
     '''Class for representing objects'''
 
-    def __init__(self, pose, index, dimensions, is_recognized, cluster=None):
+    def __init__(self, pose, index, dimensions, is_recognized, cluster=None, name=None):
         '''
         Args:
             pose (Pose): Position of bounding box
@@ -93,7 +93,7 @@ class WorldLandmark:
             is_recognized (bool): Result of object recognition.
         '''
         self.index = index
-        self.assigned_name = None
+        self.assigned_name = name
         self.is_recognized = is_recognized
 
         rospy.loginfo( "[DEBUG] creating object with cluster of type")
@@ -260,23 +260,33 @@ class World:
         else:
             return arm_state.ee_pose
 
+    # Takes in a reference object, and a list of landmarks
+    # Returns three values in order:
+    #   1) chosen_obj - The closest ob
     @staticmethod
     def get_most_similar_obj(ref_object, ref_frame_list):
         '''Finds the most similar object in the world.
 
         Args:
-            ref_object (?)
+            ref_object - the object for which to get most similar object from
+                ref_frame_list
             ref_frame_list ([Landmark]): List of objects (as defined by
                 Landmark.msg).
 
         Returns:
             Landmark|None: As in one of Landmark.msg, or None if no object
                 was found close enough.
+            best_dist: Distance from chosen Landmark from ref_obj
+            obj_dissimilarities: list of object dissimilaries for each
+                object in ref_frame_list.
         '''
         best_dist = 10000  # Not a constant; an absurdly high number.
         chosen_obj = None
-        for ref_frame in ref_frame_list:
+        obj_dissimilarities = [best_dist] * len(ref_frame_list) # record all dissimilarities
+        for i in range(0, len(ref_frame_list)):
+            ref_frame = ref_frame_list[i]
             dist = World.object_dissimilarity(ref_frame, ref_object)
+            obj_dissimilarities[i] = dist
             if dist < best_dist:
                 best_dist = dist
                 chosen_obj = ref_frame
@@ -292,7 +302,7 @@ class World:
                     'Most similar to new object: ' + str(chosen_obj.name))
 
         # Regardless, return the "closest object," which may be None.
-        return chosen_obj
+        return chosen_obj, best_dist, obj_dissimilarities
 
     @staticmethod
     def get_frame_list():
@@ -331,6 +341,8 @@ class World:
         rospy.loginfo("Calling ICP service")
         resp = _icp_service(obj1.cluster, obj2.cluster)
         fitness = resp.fitness_score
+        # TODO: visualize ICP results 
+        # visualize the abstract mapped onto each object, show fitness score? 
         rospy.loginfo("Fitness score was: " + str(fitness))
         return fitness
         # d1 = obj1.dimensions

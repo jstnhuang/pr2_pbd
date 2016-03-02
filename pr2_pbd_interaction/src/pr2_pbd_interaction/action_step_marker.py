@@ -47,6 +47,7 @@ COLOR_TRAJ_ENDPOINT_SPHERES = ColorRGBA(1.0, 0.5, 0.0, 0.8)
 COLOR_TRAJ_STEP_SPHERES = ColorRGBA(0.8, 0.4, 0.0, 0.8)
 COLOR_OBJ_REF_ARROW = ColorRGBA(1.0, 0.8, 0.2, 0.5)
 COLOR_STEP_TEXT = ColorRGBA(0.0, 0.0, 0.0, 0.5)
+COLOR_REF_SCORE_TEXT = ColorRGBA(0.0, 0.5, 0.0, 0.9)
 COLOR_MESH_REACHABLE = ColorRGBA(1.0, 0.5, 0.0, 0.6)
 COLOR_MESH_UNREACHABLE = ColorRGBA(0.5, 0.5, 0.5, 0.6)
 
@@ -108,7 +109,7 @@ class ActionStepMarker:
 
     _im_server = None
     _offset = DEFAULT_OFFSET
-    _ref_object_list = None
+    _ref_object_list = None     # List of reference objects (Represented by Landmarks)
     _ref_names = None
     _marker_click_cb = None
 
@@ -136,6 +137,10 @@ class ActionStepMarker:
         self.is_control_visible = False
         self.is_edited = False
         self.has_object = False
+        self.ref_object_scores = None  # list of object similarity scores for objects at the latest iteration
+                                        # ref_object_scores[i] gives the similarity score of _ref_object_list[i] to the
+                                        # actual reference object
+                                        # Only valid if self.has_object
 
         self._sub_entries = None
         self._menu_handler = None
@@ -241,13 +246,16 @@ class ActionStepMarker:
         arm_pose = self.get_target()
         if arm_pose.refFrame == ArmState.OBJECT:
             prev_ref_obj = arm_pose.refFrameLandmark
-            new_ref_obj = World.get_most_similar_obj(
+            new_ref_obj, ref_obj_score, ref_object_scores = World.get_most_similar_obj(
                 prev_ref_obj, ref_frame_list)
             if new_ref_obj is not None:
                 self.has_object = True
                 arm_pose.refFrameLandmark = new_ref_obj
+                self.ref_object_scores = ref_object_scores # store the similarity score for each object
             else:
                 self.has_object = False
+                self.ref_object_scores = None
+
 
         # Re-populate cached list of reference names.
         ActionStepMarker._ref_names = [BASE_LINK]
@@ -738,6 +746,34 @@ class ActionStepMarker:
                     points=[pose.position, Point(0, 0, 0)]
                 )
             )
+
+            # if there is an object indicated, we also want to 
+            # label each object with its score
+            for i in range(0, len(self._ref_object_list)):
+                obj = self._ref_object_list[i]
+                if self.ref_object_scores == None:
+                    rospy.logerr("Ref_object_scores is None when there is a reference object.")
+                obj_score = self.ref_object_scores[i]
+
+                # place a marker with this object score at the position of the object
+                text_pos = Point()
+                text_pos.x = obj.pose.position.x
+                text_pos.y = obj.pose.position.y
+                text_pos.z = obj.pose.position.z + TEXT_Z_OFFSET
+                menu_control.markers.append(
+                    Marker(
+                        type=Marker.TEXT_VIEW_FACING,
+                        id=self.get_uid(),
+                        scale=SCALE_STEP_TEXT,
+                        text='Similarity score: ' + str(obj_score),
+                        color=COLOR_REF_SCORE_TEXT,
+                        header=Header(frame_id='base_link'),
+                        pose=Pose(text_pos, Quaternion(0, 0, 0, 1))
+                        # pose=Pose(Point(0, 0, 0), Quaternion(0, 0, 0, 1))
+                    )
+                )
+
+
 
         # Make and add the text for this step ('Step X').
         text_pos = Point()
