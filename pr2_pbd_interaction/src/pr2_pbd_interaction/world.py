@@ -316,7 +316,7 @@ class World:
 
     @staticmethod
     def has_objects():
-        '''Returns whetehr there are any objects (reference frames).
+        '''Returns whether there are any objects (reference frames).
 
         Returns:
             bool
@@ -325,13 +325,16 @@ class World:
 
     @staticmethod
     def object_dissimilarity(obj1, obj2):
-        '''Returns distance between two objects.
+        '''Returns distance (dissimilarity) between two objects based 
+        on various features.
 
         Returns:
             float
         '''
         rospy.loginfo("[DEBUG] **** EVALUATING DISSIMILARITY ****")
         # rospy.loginfo("" + str(obj1.cluster))
+        
+        # FEATURE 1: ICP RESULT
         rospy.loginfo("Waiting for service icpTransform...")
         rospy.wait_for_service('icpTransform')
         _icp_service = rospy.ServiceProxy(
@@ -341,13 +344,25 @@ class World:
         rospy.loginfo("Calling ICP service")
         resp = _icp_service(obj1.cluster, obj2.cluster)
         fitness = resp.fitness_score
-        # TODO: visualize ICP results 
-        # visualize the abstract mapped onto each object, show fitness score? 
         rospy.loginfo("Fitness score was: " + str(fitness))
-        return fitness
+
+        # FEATURE 2: bounding box
         # d1 = obj1.dimensions
         # d2 = obj2.dimensions
         # return norm(array([d1.x, d1.y, d1.z]) - array([d2.x, d2.y, d2.z]))
+
+        # # FEATURE 3: average color
+        # rospy.loginfo("Waiting for service avgColorService...")
+        # rospy.wait_for_service('avgColorService')
+        # _icp_service = rospy.ServiceProxy(
+        #     'avgColorService',
+        #     ICPTransform)
+        # rospy.loginfo("Service avgColorService found!")
+        # rospy.loginfo("Calling Average Color Service")
+        # resp = _icp_service(obj1.cluster, obj2.cluster)
+        # fitness = resp.fitness_score
+        # rospy.loginfo("Fitness score was: " + str(fitness))
+        return fitness
 
     @staticmethod
     def get_ref_from_name(ref_name):
@@ -789,7 +804,7 @@ class World:
         World.objects = []
         self._lock.release()
 
-    def _add_new_object(self, pose, dimensions, is_recognized, mesh=None, cluster = None):
+    def _add_new_object(self, pose, dimensions, is_recognized, mesh=None, cluster=None):
         '''Maybe add a new object with the specified properties to our
         object list.
 

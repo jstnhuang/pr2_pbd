@@ -253,7 +253,7 @@ class ArmControlMarker:
 
         target_joints = self._arm.get_ik_for_ee(
                 pose, self._arm.get_joint_state())
-
+        side_str = self._arm.side()
         if target_joints is not None:
             time_to_pose = self._arm.get_time_to_pose(self.get_pose())
 
@@ -266,7 +266,7 @@ class ArmControlMarker:
             thread.start()
 
             # Log
-            side_str = self._arm.side()
+            
             rospy.loginfo('Started thread to move ' + side_str + ' arm.')
         else:
             rospy.loginfo('Will not move ' + side_str + ' arm; unreachable.')

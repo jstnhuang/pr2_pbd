@@ -1,0 +1,7 @@
+sensor_msgs/PointCloud pc
+----
+float64 redness
+float64 blueness
+float64 greenness
+
+
