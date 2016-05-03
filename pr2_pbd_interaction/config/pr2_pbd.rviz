@@ -533,7 +533,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.01
       Style: Flat Squares
-      Topic: /head_mount_kinect/depth/points
+      Topic: /head_mount_kinect/depth_registered/points
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -579,22 +579,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.13338
+      Distance: 2.67853
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.26045
-        Y: -0.466054
-        Z: 0.523743
+        X: 0.00900742
+        Y: -0.822565
+        Z: 1.11139
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.389796
+      Pitch: 0.289796
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.625397
+      Yaw: 4.1154
     Saved: ~
 Window Geometry:
   Displays:
@@ -612,5 +612,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1237
-  X: 415
+  X: 408
   Y: 37
