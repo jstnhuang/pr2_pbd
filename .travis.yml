@@ -17,45 +17,38 @@ cache: apt
 # general.
 before_install:
     - sudo apt-get --purge remove mongodb-10gen postgresql-9.2 postgresql-contrib-9.2 postgresql-9.3 postgresql-contrib-9.3
+    - export ROS_DISTRO=hydro
+    # Settings to make installing script more general.
+    - export ROS_CI_DESKTOP=`lsb_release -cs`  # e.g. 'precise'
+    - export ROS_MASTER_URI=http://localhost:11311
+
+notifications:
+    email: false
 
 # Commands to install dependencies
 # --------------------------------
 install:
-# Update package list and install new versions.
-    - sudo apt-get update
-    - sudo apt-get upgrade --fix-missing
-# First, move code to correct place. Also Travis-CI specific.
-    - mkdir -p ~/rosbuild_ws
-    - cd ..; mv pr2_pbd ~/rosbuild_ws/
-# Settings to make installing script more general.
-    - export ROS_CI_DESKTOP=`lsb_release -cs`  # e.g. 'precise'
-    - export ROS_CI_VERSION=groovy  # e.g. 'groovy'
-    - export ROS_CI_PREFIX=ros-${ROS_CI_VERSION}-  # e.g. 'ros-groovy-'
-# Exports for ROS
-    - export ROS_HOSTNAME=localhost
-    - export ROS_MASTER_URI=http://localhost:11311
-    - export ROBOT=sim
-# Add ROS repositories, setup keys, update, install, init basics
-    - echo "deb http://packages.ros.org/ros/ubuntu $ROS_CI_DESKTOP main" | sudo tee /etc/apt/sources.list.d/ros-latest.list
+    # Install ROS
+    - sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu `lsb_release -sc` main" > /etc/apt/sources.list.d/ros-latest.list'
     - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
-    - yes | sudo apt-get -y update
-    - yes | sudo apt-get -y install ${ROS_CI_PREFIX}desktop-full
+    - sudo apt-get update -qq
+    - sudo apt-get install -qq -y python-catkin-pkg python-rosdep python-wstool ros-$ROS_DISTRO-catkin ros-$ROS_DISTRO-ros
+    - sudo pip install -U setuptools
+    - sudo pip install -U catkin_tools
+    - source /opt/ros/$ROS_DISTRO/setup.bash
+    # Setup rosdep
     - sudo rosdep init
     - rosdep update
-# Environment setup
-    - source /opt/ros/${ROS_CI_VERSION}/setup.bash
-# Add required debian and python packages with apt-get and pip.
-    - cd ~/rosbuild_ws/pr2_pbd
-    - yes | sudo apt-get -y install $(< packages.txt)
-    - pip install -r requirements.txt
-# Initialize ROS workspace, setup, set path
-    - cd ~/rosbuild_ws
-    - rosws init . /opt/ros/${ROS_CI_VERSION}
-    - source ~/rosbuild_ws/setup.bash
-    - export ROS_PACKAGE_PATH=~/rosbuild_ws/:/opt/ros/${ROS_CI_VERSION}/share:/opt/ros/${ROS_CI_VERSION}/stacks
-# Make messages
-    - cd pr2_pbd
-    - rosmake
+    # Create workspace.
+    - mkdir -p ~/catkin_ws/src
+    - mv ../pr2_pbd ~/catkin_ws/src
+    - cd ~/catkin_ws
+    - catkin init
+    # Install dependencies
+    - rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
+    # Build
+    - catkin build
+    - source ~/catkin_ws/devel/setup.bash --extend
 
 # Command to run tests
 # --------------------
@@ -67,4 +60,4 @@ script:
 # Linter: last resort to getting *something* useful to run on Travis :-)
 # NOTE(mbforbes): Add more files to this as they're completed.
     - roscd pr2_pbd_interaction
-    - pep8 src/*.py test/*.py nodes/*.py
+#    - pep8 src/*.py test/*.py nodes/*.py

@@ -2,18 +2,18 @@ cmake_minimum_required(VERSION 2.8.3)
 project(tabletop_object_detector)
 
 find_package(catkin REQUIRED COMPONENTS 
-	message_generation
-	roscpp
 	geometry_msgs
-	shape_msgs
 	household_objects_database_msgs
-	std_msgs
+	message_generation
 	pcl_conversions
 	pcl_ros
+	roscpp
 	sensor_msgs
+	shape_msgs
+	std_msgs
 	tf
-	sensor_msgs
-	visualization_msgs)
+	visualization_msgs
+)
 
 add_message_files(
 	FILES 
