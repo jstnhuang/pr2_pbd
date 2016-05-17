@@ -1,4 +1,5 @@
 from pr2_pbd_interaction.srv import ExecuteActionById, ExecuteActionByIdResponse
+import rospy
 
 
 class ExecuteActionServer(object):
@@ -15,5 +16,15 @@ class ExecuteActionServer(object):
         """
         self._interaction.switch_to_action_by_id(request.action_id)
         self._interaction._execute_action()
+        rate = rospy.Rate(10)
+        start = rospy.Time.now()
+        timeout = rospy.Duration(60*5)
+        while self._interaction.arms.is_executing():
+            elapsed_time = rospy.Time.now() - start
+            if elapsed_time > timeout:
+                rospy.logwarn('PbD action did not finish after 5 minutes')
+                break
+            rate.sleep()
+
         response = ExecuteActionByIdResponse()
         return response
