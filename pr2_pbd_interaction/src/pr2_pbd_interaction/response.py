@@ -122,7 +122,7 @@ class Response:
 
         if Response.gaze_client is None:
             Response.gaze_client = SimpleActionClient(ACTION_GAZE, GazeAction)
-            Response.gaze_client.wait_for_server()
+            Response.gaze_client.wait_for_server(rospy.Duration(10))
 
         if Response._robot_speech is None:
             Response._robot_speech = RobotSpeech()
