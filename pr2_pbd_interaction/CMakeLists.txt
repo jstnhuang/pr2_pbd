@@ -5,13 +5,15 @@ project(pr2_pbd_interaction)
 # Load catkin and all dependencies required for this package
 # TODO: remove all from COMPONENTS that are not catkin packages.
 find_package(catkin REQUIRED COMPONENTS
-  rospy
   actionlib
-  std_msgs
   geometry_msgs
-  tf
   message_generation
+  mongo_msg_db_msgs
   pr2_arm_control
+  rospy
+  rospy_message_converter
+  std_msgs
+  tf
 )
 
 # include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
@@ -26,6 +28,7 @@ catkin_python_setup()
 # Generate messages and services
 add_message_files(
   FILES
+  Action.msg
   ActionStep.msg
   ArmState.msg
   Condition.msg
@@ -42,6 +45,7 @@ add_message_files(
 
 add_service_files(
   FILES
+  ExecuteActionById.srv
   GetExperimentState.srv
   Ping.srv
 )

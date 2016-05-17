@@ -8,11 +8,14 @@ This repository contains the work of [Maya Cakmak](http://www.mayacakmak.com/) a
 Currently the PbD system has the following requirements:
 - Ubuntu 12.04
 - ROS Hydro
+- [mongo_msg_db](https://github.com/jstnhuang/mongo_msg_db) and [mongo_msg_db_msgs](https://github.com/jstnhuang/mongo_msg_db_msgs)
 
 ## Installing
 Clone this repository and build on both your desktop machine and on the robot:
 ```bash
 cd ~/catkin_ws/src
+git clone https://github.com/jstnhuang/mongo_msg_db_msgs.git
+git clone https://github.com/jstnhuang/mongo_msg_db.git
 git clone https://github.com/PR2/pr2_pbd.git
 cd ~/catkin_ws
 rosdep install --from-paths src --ignore-src --rosdistro=hydro -y

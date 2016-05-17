@@ -22,10 +22,9 @@ from visualization_msgs.msg import MarkerArray, Marker
 # Local
 from action_step_marker import ActionStepMarker
 from pr2_arm_control.msg import Side, GripperState
-from pr2_pbd_interaction.msg import (
-    ArmState, ActionStepSequence, ActionStep, ArmTarget,
-    GripperAction, ArmTrajectory)
-
+from pr2_pbd_interaction.msg import Action
+from pr2_pbd_interaction.msg import (ArmState, ActionStepSequence, ActionStep,
+                                     ArmTarget, GripperAction, ArmTrajectory)
 
 # ######################################################################
 # Module level constants
@@ -47,10 +46,10 @@ TOPIC_BAG_SEQ = 'sequence'  # used when saving
 # TODO(mbforbes): This should be in one module only.
 BASE_LINK = 'base_link'
 
-
 # ######################################################################
 # Classes
 # ######################################################################
+
 
 class ProgrammedAction:
     '''Holds information for one action.'''
@@ -67,6 +66,7 @@ class ProgrammedAction:
                 ActionStepMarker.calc_uid(...).
         '''
         # Initialize a bunch of state.
+        self.name = ''  # Human-friendly name for this action.
         self.seq = ActionStepSequence()
         self.action_index = action_index
         self.step_click_cb = step_click_cb
@@ -95,8 +95,27 @@ class ProgrammedAction:
         self.lock = threading.Lock()
 
         if ProgrammedAction._marker_publisher is None:
-            ProgrammedAction._marker_publisher = rospy.Publisher(
-                TOPIC_MARKERS, MarkerArray)
+            ProgrammedAction._marker_publisher = rospy.Publisher(TOPIC_MARKERS,
+                                                                 MarkerArray)
+
+    @staticmethod
+    def from_msg(action_msg, action_index=0, callback=None):
+        '''Creates a ProgrammedAction from an Action ROS msg.
+        '''
+        if callback is None:
+            callback = lambda x: None
+        p = ProgrammedAction(action_index, callback)
+        p.name = action_msg.name
+        p.seq = action_msg.sequence
+        return p
+
+    def to_msg(self):
+        '''Creates an Action ROS msg from this ProgrammedAction.
+        '''
+        a = Action()
+        a.name = self.name
+        a.sequence = self.seq
+        return a
 
     # ##################################################################
     # Static methods: Internal ("private")
@@ -172,8 +191,7 @@ class ProgrammedAction:
         # Both arm targets and trajectories have a gripper action.
         copy.gripperAction = GripperAction(
             GripperState(action_step.gripperAction.rGripper.state),
-            GripperState(action_step.gripperAction.lGripper.state)
-        )
+            GripperState(action_step.gripperAction.lGripper.state))
         return copy
 
     @staticmethod
@@ -189,8 +207,8 @@ class ProgrammedAction:
         copy = ArmState()
         copy.refFrame = int(arm_state.refFrame)
         copy.joint_pose = arm_state.joint_pose[:]
-        copy.ee_pose = Pose(
-            arm_state.ee_pose.position, arm_state.ee_pose.orientation)
+        copy.ee_pose = Pose(arm_state.ee_pose.position,
+                            arm_state.ee_pose.orientation)
         # WARNING: the following is not really copying
         copy.refFrameLandmark = arm_state.refFrameLandmark
         return copy
@@ -228,25 +246,17 @@ class ProgrammedAction:
         # support future step types in the system. Doesn't this just
         # mark one more spot in the code that needs to be changed to
         # implement another action type?
-        if (step.type == ActionStep.ARM_TARGET
-                or step.type == ActionStep.ARM_TRAJECTORY):
+        if (step.type == ActionStep.ARM_TARGET or
+            step.type == ActionStep.ARM_TRAJECTORY):
             # Create and append new action step markers.
             # NOTE(mbforbes): One of many instances of code duplication
             # b/c of right/left...
             last_step = self.seq.seq[-1]
-            r_marker = ActionStepMarker(
-                self.n_frames(),
-                Side.RIGHT,
-                last_step,
-                self.marker_click_cb
-            )
+            r_marker = ActionStepMarker(self.n_frames(), Side.RIGHT, last_step,
+                                        self.marker_click_cb)
             r_marker.update_ref_frames(object_list)
-            l_marker = ActionStepMarker(
-                self.n_frames(),
-                Side.LEFT,
-                last_step,
-                self.marker_click_cb
-            )
+            l_marker = ActionStepMarker(self.n_frames(), Side.LEFT, last_step,
+                                        self.marker_click_cb)
             l_marker.update_ref_frames(object_list)
             self.r_markers.append(r_marker)
             self.l_markers.append(l_marker)
@@ -295,8 +305,7 @@ class ProgrammedAction:
         self.lock.acquire()
         to_delete = None
         for i in range(len(self.r_markers)):
-            if (self.r_markers[i].is_deleted or
-                    self.l_markers[i].is_deleted):
+            if (self.r_markers[i].is_deleted or self.l_markers[i].is_deleted):
                 # We found something to delete. Mark and break (as we
                 # delete only one thing).
                 rospy.loginfo('Will delete step ' + str(i + 1))
@@ -395,7 +404,7 @@ class ProgrammedAction:
             self.lock.acquire()
             demo_bag = rosbag.Bag(filename)
             for dummy, msg, bag_time in demo_bag.read_messages(
-                    topics=[TOPIC_BAG_SEQ]):
+                topics=[TOPIC_BAG_SEQ]):
                 rospy.loginfo(
                     'Reading demo bag file at time ' + str(bag_time.to_sec()))
                 self.seq = msg
@@ -487,7 +496,7 @@ class ProgrammedAction:
             # mark one more spot in the code that needs to be changed to
             # implement another action type?
             if (step.type == ActionStep.ARM_TARGET or
-                    step.type == ActionStep.ARM_TRAJECTORY):
+                step.type == ActionStep.ARM_TRAJECTORY):
                 # Construct the markers.
                 r_marker = ActionStepMarker(
                     i + 1,  # step_number
@@ -615,9 +624,8 @@ class ProgrammedAction:
         self.lock.acquire()
         n_steps = len(self.seq.seq)
         if index < 0 or index >= n_steps:
-            rospy.logerr(
-                "Requested step index " + str(index) + ", but only have " +
-                str(n_steps) + " steps.")
+            rospy.logerr("Requested step index " + str(index) +
+                         ", but only have " + str(n_steps) + " steps.")
             requested_step = None
         else:
             requested_step = self.seq.seq[index]
@@ -679,15 +687,13 @@ class ProgrammedAction:
         markers = self.r_markers if arm_index == Side.RIGHT else self.l_markers
         start = markers[to_index - 1].get_absolute_position(is_start=True)
         end = markers[to_index].get_absolute_position(is_start=False)
-        return Marker(
-            type=Marker.ARROW,
-            id=ActionStepMarker.calc_uid(arm_index, to_index),
-            lifetime=LINK_MARKER_LIFETIME,
-            scale=LINK_SCALE,
-            header=Header(frame_id=BASE_LINK),
-            color=LINK_COLOR,
-            points=[start, end]
-        )
+        return Marker(type=Marker.ARROW,
+                      id=ActionStepMarker.calc_uid(arm_index, to_index),
+                      lifetime=LINK_MARKER_LIFETIME,
+                      scale=LINK_SCALE,
+                      header=Header(frame_id=BASE_LINK),
+                      color=LINK_COLOR,
+                      points=[start, end])
 
     def _update_markers(self):
         '''Updates the markers after a change.'''

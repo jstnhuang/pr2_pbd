@@ -357,7 +357,7 @@ class PbDGUI(Plugin):
         self.actionIcons[actionIndex] = actIcon
 
     def step_pressed(self, step_index):
-        gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
+        gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, str(step_index))
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def action_pressed(self, actionIndex, isPublish=True):
@@ -371,7 +371,7 @@ class PbDGUI(Plugin):
         self.currentAction = actionIndex
         self.stepsBox.setTitle('Steps for Action ' + str(self.currentAction+1))
         if isPublish:
-            gui_cmd = GuiCommand(GuiCommand.SWITCH_TO_ACTION, (actionIndex+1))
+            gui_cmd = GuiCommand(GuiCommand.SWITCH_TO_ACTION, str(actionIndex+1))
             self.gui_cmd_publisher.publish(gui_cmd)
 
     def command_cb(self):

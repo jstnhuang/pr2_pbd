@@ -22,9 +22,9 @@ from visualization_msgs.msg import MarkerArray
 from pr2_arm_control.msg import ArmMode, Side, GripperState
 from pr2_pbd_interaction.arms import Arms
 from session import Session
-from pr2_pbd_interaction.msg import (
-    ArmState, ActionStep, ArmTarget, Landmark, GripperAction,
-    ArmTrajectory, ExecutionStatus, GuiCommand)
+from pr2_pbd_interaction.msg import (ArmState, ActionStep, ArmTarget, Landmark,
+                                     GripperAction, ArmTrajectory,
+                                     ExecutionStatus, GuiCommand)
 from pr2_pbd_interaction.srv import Ping, PingResponse
 from pr2_pbd_speech_recognition.msg import Command
 from pr2_social_gaze.msg import GazeGoal
@@ -32,7 +32,6 @@ from response import Response
 from robot_speech import RobotSpeech
 from world import World
 from std_msgs.msg import String
-
 
 # ######################################################################
 # Module level constants
@@ -44,10 +43,10 @@ BASE_LINK = 'base_link'
 # this is actually used anywhere. See arm.py: MOVE_TO_JOINTS_VELOCITY.
 DEFAULT_VELOCITY = 0.2
 
-
 # ######################################################################
 # Classes
 # ######################################################################
+
 
 class Interaction:
     '''Interaction is the multiplexer of commands received into system
@@ -61,22 +60,23 @@ class Interaction:
     This is the core class of the PbD "backend"; it can run on the robot
     or on the desktop.
     '''
+
     # TODO(mbforbes): Refactor trajectory busiens into new class.
     # TODO(mbforbes): Document class attributes in docstring.
 
-    def __init__(self):
+    def __init__(self, arms, session, world):
         # Create main components.
-        self.world = World()
-        self.arms = Arms(World.tf_listener)
-        self.session = Session(object_list=self.world.get_frame_list())
+        self.world = world
+        self.arms = arms
+        self.session = session
 
         # ROS publishers and subscribers.
-        self._viz_publisher = rospy.Publisher(
-            'visualization_marker_array', MarkerArray)
-        self._arm_reset_publisher = rospy.Publisher(
-            'arm_control_reset', String)
-        rospy.Subscriber(
-            'recognized_command', Command, self._speech_command_cb)
+        self._viz_publisher = rospy.Publisher('visualization_marker_array',
+                                              MarkerArray)
+        self._arm_reset_publisher = rospy.Publisher('arm_control_reset',
+                                                    String)
+        rospy.Subscriber('recognized_command', Command,
+                         self._speech_command_cb)
         rospy.Subscriber('gui_command', GuiCommand, self._gui_command_cb)
 
         # Initialize trajectory recording state.
@@ -91,9 +91,9 @@ class Interaction:
         # utterance and a gaze action are created and then executed.
         # (This happens internally in Response.respond(...)).
         self.responses = {
-            Command.TEST_MICROPHONE: Response(
-                self._empty_response,
-                [RobotSpeech.TEST_RESPONSE, GazeGoal.NOD]),
+            Command.TEST_MICROPHONE: Response(self._empty_response,
+                                              [RobotSpeech.TEST_RESPONSE,
+                                               GazeGoal.NOD]),
             Command.RELAX_RIGHT_ARM: Response(self._relax_arm, Side.RIGHT),
             Command.RELAX_LEFT_ARM: Response(self._relax_arm, Side.LEFT),
             Command.OPEN_RIGHT_HAND: Response(self._open_hand, Side.RIGHT),
@@ -110,17 +110,17 @@ class Interaction:
             Command.NEXT_ACTION: Response(self._next_action, None),
             Command.PREV_ACTION: Response(self._previous_action, None),
             Command.SAVE_POSE: Response(self._save_step, None),
-            Command.RECORD_OBJECT_POSE: Response(
-                self._record_object_pose, None),
-            Command.START_RECORDING_MOTION: Response(
-                self._start_recording, None),
+            Command.RECORD_OBJECT_POSE: Response(self._record_object_pose,
+                                                 None),
+            Command.START_RECORDING_MOTION: Response(self._start_recording,
+                                                     None),
             Command.STOP_RECORDING_MOTION: Response(self._stop_recording, None)
         }
 
         # Span off a thread to run the update loops.
-        threading.Thread(
-            group=None, target=self.update, name='interaction_update_thread'
-        ).start()
+        threading.Thread(group=None,
+                         target=self.update,
+                         name='interaction_update_thread').start()
 
         # Register signal handlers for program termination.
         # TODO(mbforbes): Test that these are really catching the
@@ -132,8 +132,8 @@ class Interaction:
 
         # The PbD backend is ready.
         rospy.loginfo('Interaction initialized.')
-        self._ping_srv = rospy.Service(
-            'interaction_ping', Ping, self._interaction_ping)
+        self._ping_srv = rospy.Service('interaction_ping', Ping,
+                                       self._interaction_ping)
 
     # ##################################################################
     # Internal ("private" methods)
@@ -202,8 +202,8 @@ class Interaction:
             # Update any changes to steps that need to happen.
             action.delete_requested_steps()
             states = self._get_arm_states()
-            action.change_requested_steps(
-                states[Side.RIGHT], states[Side.LEFT])
+            action.change_requested_steps(states[Side.RIGHT],
+                                          states[Side.LEFT])
 
             # If the objects in the world have changed, update the
             # action with them.
@@ -231,13 +231,12 @@ class Interaction:
         # We extract the command string as we use it a lot.
         strCmd = command.command
         if strCmd in self.responses.keys():
-            rospy.loginfo(
-                '\033[32m' + 'Calling response for command ' + strCmd +
-                '\033[0m')
+            rospy.loginfo('\033[32m' + 'Calling response for command ' + strCmd
+                          + '\033[0m')
             response = self.responses[strCmd]
 
-            if ((not self.arms.is_executing()) or strCmd ==
-                    Command.STOP_EXECUTION):
+            if ((not self.arms.is_executing()) or
+                strCmd == Command.STOP_EXECUTION):
                 response.respond()
             else:
                 rospy.logwarn(
@@ -265,36 +264,76 @@ class Interaction:
         # currently executing an action, and second, we must have at
         # least one action.
         if not self.arms.is_executing():
-            if self.session.n_actions() > 0:
-                if strCmd == GuiCommand.SWITCH_TO_ACTION:
-                    # Command: switch to a specified action.
-                    action_no = command.param
-                    self.session.switch_to_action(
-                        action_no,
-                        self.world.get_frame_list())
-                    response = Response(
-                        self._empty_response,
-                        [RobotSpeech.SWITCH_SKILL + str(action_no),
-                            GazeGoal.NOD])
-                    response.respond()
-                elif strCmd == GuiCommand.SELECT_ACTION_STEP:
-                    # Command: select a step in the current action.
-                    step_no = command.param
-                    self.session.select_action_step(step_no)
-                    rospy.loginfo('Selected action step ' + str(step_no))
-                else:
-                    # Command: unknown. (Currently impossible.)
-                    rospy.logwarn('This command (' + strCmd + ') is unknown.')
+            if strCmd == GuiCommand.SWITCH_TO_ACTION:
+                index = int(command.param) - 1
+                self.switch_to_action_by_index(index)
+            elif strCmd == GuiCommand.SWITCH_TO_ACTION_BY_ID:
+                action_id = command.param
+                self.switch_to_action_by_id(action_id)
+            elif strCmd == GuiCommand.SELECT_ACTION_STEP:
+                # Command: select a step in the current action.
+                step_number = int(command.param)
+                self.select_action_step(step_number)
             else:
-                # No actions; warn user.
-                response = Response(
-                    self._empty_response,
-                    [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
-                response.respond()
+                # Command: unknown. (Currently impossible.)
+                rospy.logwarn('This command (' + strCmd + ') is unknown.')
         else:
             # Currently executing; ignore command.
-            rospy.logwarn(
-                'Ignoring GUI command during execution: ' + strCmd)
+            rospy.logwarn('Ignoring GUI command during execution: ' + strCmd)
+
+    def switch_to_action_by_index(self, index):
+        '''Switches to an action that is already loaded in the session.
+
+        The action is accessed by the index in the session's action list.
+        The index is 0-based, so the first action is action 0.
+
+        Args:
+            index: int, the index into the session's action list to switch to.
+        '''
+        # Command: switch to a specified action.
+        success = self.session.switch_to_action_by_index(
+            index, self.world.get_frame_list())
+        if not success:
+            response = Response(self._empty_response,
+                                [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
+            response.respond()
+        else:
+            response = Response(self._empty_response,
+                                [RobotSpeech.SWITCH_SKILL + str(index),
+                                 GazeGoal.NOD])
+            response.respond()
+
+    def switch_to_action_by_id(self, action_id):
+        '''Switches to an action saved in the database.
+
+        The action may or may not already be loaded in the current session.
+        If the action is not in the session, then it is added to the end of the
+        session's action list.
+
+        Args:
+            action_id: string, the ID in the database of the action to load.
+        '''
+        success = self.session.switch_to_action(action_id,
+                                                self.world.get_frame_list())
+        if not success:
+            response = Response(self._empty_response,
+                                [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
+            response.respond()
+        else:
+            response = Response(self._empty_response,
+                                [RobotSpeech.SWITCH_SKILL + action_id,
+                                 GazeGoal.NOD])
+            response.respond()
+
+    def select_action_step(self, step_number):
+        '''Selects a step in the current action.
+
+        Args:
+            step_number: int, the index in the list of steps for the current
+            action.
+        '''
+        self.session.select_action_step(step_number)
+        rospy.loginfo('Selected action step ' + str(step_number))
 
     # The following methods are selected from commands (either GUI or
     # speech) and then called from within a Response objects's
@@ -319,13 +358,13 @@ class Interaction:
                 # If we're currently programming, save that as a step.
                 self._save_gripper_step(arm_index, GripperState.OPEN)
                 speech_response = (
-                    speech_response + ' ' + RobotSpeech.STEP_RECORDED)
+                    speech_response + ' ' + RobotSpeech.STEP_RECORDED
+                )
             return [speech_response, Response.glance_actions[arm_index]]
         else:
             # Hand was already open; complain.
-            return [
-                Response.already_open_responses[arm_index],
-                Response.glance_actions[arm_index]]
+            return [Response.already_open_responses[arm_index],
+                    Response.glance_actions[arm_index]]
 
     def _close_hand(self, arm_index):
         '''Closes gripper on the indicated side.
@@ -344,13 +383,13 @@ class Interaction:
                 # If we're currently programming, save that as a step.
                 self._save_gripper_step(arm_index, GripperState.CLOSED)
                 speech_response = (
-                    ' '.join([speech_response, RobotSpeech.STEP_RECORDED]))
+                    ' '.join([speech_response, RobotSpeech.STEP_RECORDED])
+                )
             return [speech_response, Response.glance_actions[arm_index]]
         else:
             # Hand was already closed; complain.
-            return [
-                Response.already_closed_responses[arm_index],
-                Response.glance_actions[arm_index]]
+            return [Response.already_closed_responses[arm_index],
+                    Response.glance_actions[arm_index]]
 
     def _relax_arm(self, arm_index):
         '''Relaxes / releases arm on the indicated side.
@@ -364,13 +403,11 @@ class Interaction:
         # Release the arm. Response depens on whether it was previously
         # frozen or already released.
         if self.arms.set_arm_mode(arm_index, ArmMode.RELEASE):
-            return [
-                Response.release_responses[arm_index],
-                Response.glance_actions[arm_index]]
+            return [Response.release_responses[arm_index],
+                    Response.glance_actions[arm_index]]
         else:
-            return [
-                Response.already_released_responses[arm_index],
-                Response.glance_actions[arm_index]]
+            return [Response.already_released_responses[arm_index],
+                    Response.glance_actions[arm_index]]
 
     def _freeze_arm(self, arm_index):
         '''Freezes / holds / stiffens arm on the indicated side.
@@ -384,13 +421,11 @@ class Interaction:
         # Freeze the arm. Response depens on whether it was previously
         # relaxed or already frozen.
         if self.arms.set_arm_mode(arm_index, ArmMode.HOLD):
-            return [
-                Response.hold_responses[arm_index],
-                Response.glance_actions[arm_index]]
+            return [Response.hold_responses[arm_index],
+                    Response.glance_actions[arm_index]]
         else:
-            return [
-                Response.already_holding_responses[arm_index],
-                Response.glance_actions[arm_index]]
+            return [Response.already_holding_responses[arm_index],
+                    Response.glance_actions[arm_index]]
 
     def _create_action(self, __=None):
         '''Creates a new empty action.
@@ -403,9 +438,8 @@ class Interaction:
         '''
         self.world.clear_all_objects()
         self.session.new_action()
-        return [
-            RobotSpeech.SKILL_CREATED + ' ' +
-            str(self.session.current_action_index), GazeGoal.NOD]
+        return [RobotSpeech.SKILL_CREATED + ' ' +
+                str(self.session.current_action_id), GazeGoal.NOD]
 
     def _next_action(self, __=None):
         '''Switches to next action.
@@ -418,13 +452,11 @@ class Interaction:
         '''
         if self.session.n_actions() > 0:
             if self.session.next_action(self.world.get_frame_list()):
-                return [
-                    RobotSpeech.SWITCH_SKILL + ' ' +
-                    str(self.session.current_action_index), GazeGoal.NOD]
+                return [RobotSpeech.SWITCH_SKILL + ' ' +
+                        str(self.session.current_action_id), GazeGoal.NOD]
             else:
-                return [
-                    RobotSpeech.ERROR_NEXT_SKILL + ' ' +
-                    str(self.session.current_action_index), GazeGoal.SHAKE]
+                return [RobotSpeech.ERROR_NEXT_SKILL + ' ' +
+                        str(self.session.current_action_id), GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
@@ -439,15 +471,11 @@ class Interaction:
         '''
         if self.session.n_actions() > 0:
             if self.session.previous_action(self.world.get_frame_list()):
-                return [
-                    RobotSpeech.SWITCH_SKILL + ' ' +
-                    str(self.session.current_action_index),
-                    GazeGoal.NOD]
+                return [RobotSpeech.SWITCH_SKILL + ' ' +
+                        str(self.session.current_action_id), GazeGoal.NOD]
             else:
-                return [
-                    RobotSpeech.ERROR_PREV_SKILL + ' ' +
-                    str(self.session.current_action_index),
-                    GazeGoal.SHAKE]
+                return [RobotSpeech.ERROR_PREV_SKILL + ' ' +
+                        str(self.session.current_action_id), GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
@@ -555,10 +583,9 @@ class Interaction:
             )
             traj_step.gripperAction = GripperAction(
                 GripperState(self.arms.get_gripper_state(Side.RIGHT)),
-                GripperState(self.arms.get_gripper_state(Side.LEFT))
-            )
-            self.session.add_step_to_action(
-                traj_step, self.world.get_frame_list())
+                GripperState(self.arms.get_gripper_state(Side.LEFT)))
+            self.session.add_step_to_action(traj_step,
+                                            self.world.get_frame_list())
             self._arm_trajectory = None
             self._trajectory_start_time = None
             return [RobotSpeech.STOPPED_RECORDING_MOTION + ' ' +
@@ -587,8 +614,7 @@ class Interaction:
             )
             step.gripperAction = GripperAction(
                 GripperState(self.arms.get_gripper_state(Side.RIGHT)),
-                GripperState(self.arms.get_gripper_state(Side.LEFT))
-            )
+                GripperState(self.arms.get_gripper_state(Side.LEFT)))
             self.session.add_step_to_action(step, self.world.get_frame_list())
             return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
         else:
@@ -651,23 +677,25 @@ class Interaction:
                         # An object is required, and we got one. Execute.
                         self.session.get_current_action().update_objects(
                             self.world.get_frame_list())
-                        self.arms.start_execution(self.session.get_current_action(),
+                        self.arms.start_execution(
+                            self.session.get_current_action(),
                             EXECUTION_Z_OFFSET)
                     else:
                         # An object is required, but we didn't get it.
-                        return [
-                            RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
+                        return [RobotSpeech.OBJECT_NOT_DETECTED,
+                                GazeGoal.SHAKE]
                 else:
                     # No object is required: start execution now.
-                    self.arms.start_execution(self.session.get_current_action(), EXECUTION_Z_OFFSET)
+                    self.arms.start_execution(
+                        self.session.get_current_action(), EXECUTION_Z_OFFSET)
 
                 # Reply: starting execution.
                 return [RobotSpeech.START_EXECUTION + ' ' +
-                        str(self.session.current_action_index), None]
+                        str(self.session.current_action_id), None]
             else:
                 # No steps / poses / frames recorded.
                 return [RobotSpeech.EXECUTION_ERROR_NOPOSES + ' ' +
-                        str(self.session.current_action_index), GazeGoal.SHAKE]
+                        str(self.session.current_action_id), GazeGoal.SHAKE]
         else:
             # No actions.
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
@@ -694,15 +722,12 @@ class Interaction:
                 DEFAULT_VELOCITY,  # rArmVelocity (float64)
                 DEFAULT_VELOCITY  # lArmVelocity (float 64)
             )
-            new_gripper_states = [
-                self.arms.get_gripper_state(Side.RIGHT),
-                self.arms.get_gripper_state(Side.LEFT)
-            ]
+            new_gripper_states = [self.arms.get_gripper_state(Side.RIGHT),
+                                  self.arms.get_gripper_state(Side.LEFT)]
             new_gripper_states[arm_index] = gripper_state
             step.gripperAction = GripperAction(
                 GripperState(new_gripper_states[Side.RIGHT]),
-                GripperState(new_gripper_states[Side.LEFT])
-            )
+                GripperState(new_gripper_states[Side.LEFT]))
             self.session.add_step_to_action(step, self.world.get_frame_list())
 
     def _fix_trajectory_ref(self):
@@ -771,10 +796,9 @@ class Interaction:
             elif arm_state.refFrameLandmark in frame_list:
                 ref_counts[arm_state.refFrameLandmark] += 1
             else:
-                rospy.logwarn(
-                    'Ignoring object with reference frame name '
-                    + arm_state.refFrameLandmark.name
-                    + ' because the world does not have this object.')
+                rospy.logwarn('Ignoring object with reference frame name ' +
+                              arm_state.refFrameLandmark.name +
+                              ' because the world does not have this object.')
 
         # Get most common obj.
         dominant_ref_obj = ref_counts.most_common(1)[0][0]
@@ -800,12 +824,10 @@ class Interaction:
         '''
         # TODO(mbforbes): Perhaps this entire method should go in
         # the Arms class?
-        abs_ee_poses = [
-            Arms.get_ee_state(Side.RIGHT),  # (Pose)
-            Arms.get_ee_state(Side.LEFT)]  # (Pose)
-        joint_poses = [
-            Arms.get_joint_state(Side.RIGHT),  # ([float64])
-            Arms.get_joint_state(Side.LEFT)]  # ([float64])
+        abs_ee_poses = [Arms.get_ee_state(Side.RIGHT),  # (Pose)
+                        Arms.get_ee_state(Side.LEFT)]  # (Pose)
+        joint_poses = [Arms.get_joint_state(Side.RIGHT),  # ([float64])
+                       Arms.get_joint_state(Side.LEFT)]  # ([float64])
 
         states = [None, None]
         rel_ee_poses = [None, None]

@@ -29,6 +29,8 @@
 
   	<include file="$(find pr2_pbd_interaction)/launch/fake_caster.launch" />
 
+  <node name="mongo_msg_db" pkg="mongo_msg_db" type="db_node.py" />
+
 	<!-- Kinect launch -->
 	<include file="$(find pr2_pbd_interaction)/launch/kinect_tf.launch" />
 </launch>
