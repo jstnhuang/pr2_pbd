@@ -1,3 +1,4 @@
+from response import Response
 from pr2_pbd_interaction.srv import ExecuteActionById, ExecuteActionByIdResponse
 import rospy
 
@@ -15,7 +16,9 @@ class ExecuteActionServer(object):
         """Callback for serving ExecuteActionById requests.
         """
         self._interaction.switch_to_action_by_id(request.action_id)
-        self._interaction._execute_action()
+        response_params = self._interaction._execute_action()
+        response = Response(self._interaction._empty_response, response_params)
+        response.respond()
         rate = rospy.Rate(10)
         start = rospy.Time.now()
         timeout = rospy.Duration(60*5)

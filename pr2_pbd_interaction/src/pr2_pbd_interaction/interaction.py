@@ -266,10 +266,12 @@ class Interaction:
         if not self.arms.is_executing():
             if strCmd == GuiCommand.SWITCH_TO_ACTION:
                 index = int(command.param) - 1
-                self.switch_to_action_by_index(index)
+                response = self.switch_to_action_by_index(index)
+                response.respond()
             elif strCmd == GuiCommand.SWITCH_TO_ACTION_BY_ID:
                 action_id = command.param
-                self.switch_to_action_by_id(action_id)
+                response = self.switch_to_action_by_id(action_id)
+                response.respond()
             elif strCmd == GuiCommand.SELECT_ACTION_STEP:
                 # Command: select a step in the current action.
                 step_number = int(command.param)
@@ -289,6 +291,9 @@ class Interaction:
 
         Args:
             index: int, the index into the session's action list to switch to.
+
+        Returns:
+            A Response, specifying how the robot should respond to this action.
         '''
         # Command: switch to a specified action.
         success = self.session.switch_to_action_by_index(
@@ -296,12 +301,12 @@ class Interaction:
         if not success:
             response = Response(self._empty_response,
                                 [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
-            response.respond()
+            return response
         else:
             response = Response(self._empty_response,
                                 [RobotSpeech.SWITCH_SKILL + str(index),
                                  GazeGoal.NOD])
-            response.respond()
+            return response
 
     def switch_to_action_by_id(self, action_id):
         '''Switches to an action saved in the database.
@@ -312,18 +317,21 @@ class Interaction:
 
         Args:
             action_id: string, the ID in the database of the action to load.
+
+        Returns:
+            A Response, specifying how the robot should respond to this action.
         '''
         success = self.session.switch_to_action(action_id,
                                                 self.world.get_frame_list())
         if not success:
             response = Response(self._empty_response,
                                 [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
-            response.respond()
+            return response
         else:
             response = Response(self._empty_response,
                                 [RobotSpeech.SWITCH_SKILL + action_id,
                                  GazeGoal.NOD])
-            response.respond()
+            return response
 
     def select_action_step(self, step_number):
         '''Selects a step in the current action.

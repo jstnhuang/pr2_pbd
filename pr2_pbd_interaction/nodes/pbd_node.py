@@ -31,6 +31,7 @@ if __name__ == '__main__':
     global interaction
     # Register as a ROS node.
     rospy.init_node('pr2_pbd_interaction', anonymous=True)
+
     # Run the system
     db = ActionDatabase.build_real()
     world = World()
@@ -39,6 +40,7 @@ if __name__ == '__main__':
     interaction = Interaction(arms, session, world)
     execute_server = ExecuteActionServer(interaction)
     rospy.Service('execute_action', ExecuteActionById, execute_server.serve)
+
     while (not rospy.is_shutdown()):
         interaction.update()
         # This is the pause between update runs. Note that this doesn't

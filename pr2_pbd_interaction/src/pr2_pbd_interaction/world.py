@@ -584,7 +584,7 @@ class World:
         ''' Function to externally update an object pose.'''
         # Look down at the table.
         rospy.loginfo('Head attempting to look at table.')
-        Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
+        Response.force_gaze_action(GazeGoal.LOOK_DOWN)
         while (Response.gaze_client.get_state() == GoalStatus.PENDING or
                Response.gaze_client.get_state() == GoalStatus.ACTIVE):
             rospy.sleep(PAUSE_SECONDS)

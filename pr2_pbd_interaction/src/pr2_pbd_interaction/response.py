@@ -25,7 +25,6 @@ from robot_speech import RobotSpeech
 from pr2_social_gaze.msg import GazeGoal, GazeAction
 from pr2_pbd_interaction.msg import RobotSound
 
-
 # ######################################################################
 # Module level constants
 # ######################################################################
@@ -44,10 +43,10 @@ SOUND_UNKNOWN = 'OTHER'
 # The ROS action for head gazes.
 ACTION_GAZE = 'gaze_action'
 
-
 # ######################################################################
 # Classes
 # ######################################################################
+
 
 class Response:
     '''Unit of interaction, explains how to respond to a speech
@@ -65,46 +64,35 @@ class Response:
 
     # Responses (robot speech).
     # Open
-    open_responses = [
-        RobotSpeech.RIGHT_HAND_OPENING, RobotSpeech.LEFT_HAND_OPENING]
-    already_open_responses = [
-        RobotSpeech.RIGHT_HAND_ALREADY_OPEN,
-        RobotSpeech.LEFT_HAND_ALREADY_OPEN]
+    open_responses = [RobotSpeech.RIGHT_HAND_OPENING,
+                      RobotSpeech.LEFT_HAND_OPENING]
+    already_open_responses = [RobotSpeech.RIGHT_HAND_ALREADY_OPEN,
+                              RobotSpeech.LEFT_HAND_ALREADY_OPEN]
 
     # Close
-    close_responses = [
-        RobotSpeech.RIGHT_HAND_CLOSING, RobotSpeech.LEFT_HAND_CLOSING]
-    already_closed_responses = [
-        RobotSpeech.RIGHT_HAND_ALREADY_CLOSED,
-        RobotSpeech.LEFT_HAND_ALREADY_CLOSED]
+    close_responses = [RobotSpeech.RIGHT_HAND_CLOSING,
+                       RobotSpeech.LEFT_HAND_CLOSING]
+    already_closed_responses = [RobotSpeech.RIGHT_HAND_ALREADY_CLOSED,
+                                RobotSpeech.LEFT_HAND_ALREADY_CLOSED]
 
     # Release (relax).
-    release_responses = [
-        RobotSpeech.RIGHT_ARM_RELEASED, RobotSpeech.LEFT_ARM_RELEASED]
-    already_released_responses = [
-        RobotSpeech.RIGHT_ARM_ALREADY_RELEASED,
-        RobotSpeech.LEFT_ARM_ALREADY_RELEASED]
+    release_responses = [RobotSpeech.RIGHT_ARM_RELEASED,
+                         RobotSpeech.LEFT_ARM_RELEASED]
+    already_released_responses = [RobotSpeech.RIGHT_ARM_ALREADY_RELEASED,
+                                  RobotSpeech.LEFT_ARM_ALREADY_RELEASED]
 
     # Hold (freeze).
-    hold_responses = [
-        RobotSpeech.RIGHT_ARM_HOLDING, RobotSpeech.LEFT_ARM_HOLDING]
-    already_holding_responses = [
-        RobotSpeech.RIGHT_ARM_ALREADY_HOLDING,
-        RobotSpeech.LEFT_ARM_ALREADY_HOLDING]
+    hold_responses = [RobotSpeech.RIGHT_ARM_HOLDING,
+                      RobotSpeech.LEFT_ARM_HOLDING]
+    already_holding_responses = [RobotSpeech.RIGHT_ARM_ALREADY_HOLDING,
+                                 RobotSpeech.LEFT_ARM_ALREADY_HOLDING]
 
     # Sounds (robot sound).
-    all_sounds = [
-        RobotSound.ALL_POSES_DELETED,
-        RobotSound.ERROR,
-        RobotSound.MICROPHONE_WORKING,
-        RobotSound.POSE_SAVED,
-        RobotSound.START_TRAJECTORY,
-        RobotSound.CREATED_ACTION,
-        RobotSound.EXECUTION_ENDED,
-        RobotSound.OTHER,
-        RobotSound.STARTING_EXECUTION,
-        RobotSound.SUCCESS
-    ]
+    all_sounds = [RobotSound.ALL_POSES_DELETED, RobotSound.ERROR,
+                  RobotSound.MICROPHONE_WORKING, RobotSound.POSE_SAVED,
+                  RobotSound.START_TRAJECTORY, RobotSound.CREATED_ACTION,
+                  RobotSound.EXECUTION_ENDED, RobotSound.OTHER,
+                  RobotSound.STARTING_EXECUTION, RobotSound.SUCCESS]
 
     def __init__(self, function_to_call, function_param):
         '''
@@ -142,6 +130,20 @@ class Response:
             gaze_action (int): One of the constants defined in
                 Gaze.action.
         '''
+        enable_social_gaze = rospy.get_param('/enable_social_gaze', True)
+        if enable_social_gaze:
+            goal = GazeGoal()
+            goal.action = gaze_action
+            Response.gaze_client.send_goal(goal)
+
+    @staticmethod
+    def force_gaze_action(gaze_action):
+        '''Triggers a gaze action, even if enable_social_gaze is false.
+
+        Args:
+            gaze_action (int): One of the constants defined in
+                Gaze.action.
+        '''
         goal = GazeGoal()
         goal.action = gaze_action
         Response.gaze_client.send_goal(goal)
@@ -153,7 +155,9 @@ class Response:
         Args:
             point (Point)
         '''
-        Response.gaze_client.send_goal(GazeGoal(GazeGoal.LOOK_AT_POINT, point))
+        enable_social_gaze = rospy.get_param('/enable_social_gaze', True)
+        if enable_social_gaze:
+            Response.gaze_client.send_goal(GazeGoal(GazeGoal.LOOK_AT_POINT, point))
 
     @staticmethod
     def say(speech_resp):
