@@ -45,6 +45,9 @@ install:
     - cd ~/catkin_ws/src
     - git clone https://github.com/jstnhuang/mongo_msg_db_msgs.git
     - git clone https://github.com/jstnhuang/mongo_msg_db.git
+    - git clone https://github.com/jstnhuang/agile_grasp.git
+    - git clone https://github.com/hcrlab/blinky.git
+    - git clone https://github.com/jstnhuang/rapid.git
     - cd ~/catkin_ws
     - catkin init
     # Install dependencies
@@ -54,7 +57,13 @@ install:
 # --------------------
 script:
     # Build
-    - catkin build
+    - catkin build pbd_landmarks
+    - catkin build pr2_arm_control
+    - catkin build pr2_pbd_gui
+    - catkin build pr2_pbd_interaction
+    - catkin build pr2_pbd_speech_recognition
+    - catkin build pr2_social_gaze
+    - catkin build tabletop_object_detector
 # Real tests: crash because of Gazebo bugs
 #    - roslaunch pr2_pbd_interaction simulated_robot.launch gui:=false
 # Debug: trying to just run gazebo's table object launch (Gazebo bugs)

@@ -1,0 +1,3 @@
+pbd_landmarks/Landmark landmark
+---
+string id # ID of the landmark in MongoDB.
