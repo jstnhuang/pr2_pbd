@@ -1,4 +1,0 @@
-string id # ID in MongoDB
----
-string error # Empty if landmark was found, otherwise contains an error message.
-pbd_landmarks/Landmark landmark
