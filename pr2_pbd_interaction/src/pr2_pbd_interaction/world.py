@@ -85,6 +85,14 @@ class World:
     # Type: [WorldLandmark]
     objects = []
 
+    selected_obj_side = None
+
+    side_refs = []
+
+    side_markers = []
+
+    master_markers = []
+
     def __init__(self):
         # Public attributes
         if World.tf_listener is None:
@@ -95,7 +103,10 @@ class World:
         self._lock = threading.Lock()
         self._tf_broadcaster = TransformBroadcaster()
         self._im_server = InteractiveMarkerServer('world_objects')
-        
+
+	
+	self._marker_controllers = []
+        self._obj_sides = []
         rospy.wait_for_service('tabletop_segmentation')
         self._segmentation_service = rospy.ServiceProxy(
             'tabletop_segmentation',
@@ -133,11 +144,9 @@ class World:
     @staticmethod
     def get_pose_from_transform(transform):
         '''Returns pose for transformation matrix.
-
         Args:
             transform (Matrix3x3): (I think this is the correct type.
                 See ActionStepMarker as a reference for how to use.)
-
         Returns:
             Pose
         '''
@@ -151,10 +160,8 @@ class World:
     @staticmethod
     def get_matrix_from_pose(pose):
         '''Returns the transformation matrix for given pose.
-
         Args:
             pose (Pose)
-
         Returns:
             Matrix3x3: (I think this is the correct type. See
                 ActionStepMarker as a reference for how to use.)
@@ -170,10 +177,8 @@ class World:
     def get_absolute_pose(arm_state):
         '''Returns absolute pose of an end effector state (trasnforming
         if relative).
-
         Args:
             arm_state (ArmState)
-
         Returns:
             Pose
         '''
@@ -192,12 +197,10 @@ class World:
     @staticmethod
     def get_most_similar_obj(ref_object, ref_frame_list):
         '''Finds the most similar object in the world.
-
         Args:
             ref_object (?)
             ref_frame_list ([Landmark]): List of objects (as defined by
                 Landmark.msg).
-
         Returns:
             Landmark|None: As in one of Landmark.msg, or None if no object
                 was found close enough.
@@ -226,17 +229,15 @@ class World:
     @staticmethod
     def get_frame_list():
         '''Function that returns the list of reference frames (Landmarks).
-
         Returns:
             [Landmark]: List of Landmark (as defined by Landmark.msg), the
                 current reference frames.
         '''
-        return [w_obj.object for w_obj in World.objects]
+        return [w_obj.object for w_obj in World.objects] + [ref for ref in World.side_refs]
 
     @staticmethod
     def has_objects():
         '''Returns whetehr there are any objects (reference frames).
-
         Returns:
             bool
         '''
@@ -245,7 +246,6 @@ class World:
     @staticmethod
     def object_dissimilarity(obj1, obj2):
         '''Returns distance between two objects.
-
         Returns:
             float
         '''
@@ -257,10 +257,8 @@ class World:
     def get_ref_from_name(ref_name):
         '''Returns the reference frame type from the reference frame
         name specified by ref_name.
-
         Args:
             ref_name (str): Name of a referene frame.
-
         Returns:
             int: One of ArmState.*, the number code of the reference
                 frame specified by ref_name.
@@ -273,12 +271,10 @@ class World:
     @staticmethod
     def convert_ref_frame(arm_frame, ref_frame, ref_frame_obj=Landmark()):
         '''Transforms an arm frame to a new ref. frame.
-
         Args:
             arm_frame (ArmState)
             ref_frame (int): One of ArmState.*
             ref_frame_obj (Landmark): As in Landmark.msg
-
         Returns:
             ArmState: arm_frame (passed in), but modified.
         '''
@@ -311,7 +307,7 @@ class World:
                 arm_frame.refFrame = ArmState.OBJECT
                 arm_frame.refFrameLandmark = ref_frame_obj
             elif arm_frame.refFrame == ArmState.OBJECT:
-                # Transform between the same object (nothign to do).
+                # Transform between the same object (nothing to do).
                 if arm_frame.refFrameLandmark.name == ref_frame_obj.name:
                     rospy.logdebug(
                         'No reference frame transformations needed (same ' +
@@ -330,15 +326,14 @@ class World:
                 rospy.logerr(
                     'Unhandled reference frame conversion: ' +
                     str(arm_frame.refFrame) + ' to ' + str(ref_frame))
+	rospy.loginfo("Arm Frame: " + str(arm_frame))
         return arm_frame
 
     @staticmethod
     def has_object(object_name):
         '''Returns whether the world contains an Landmark with object_name.
-
         Args:
             object_name (str)
-
         Returns:
             bool
         '''
@@ -348,10 +343,8 @@ class World:
     def is_frame_valid(object_name):
         '''Returns whether the frame (object) name is valid for
         transforms.
-
         Args:
             object_name (str)
-
         Returns:
             bool
         '''
@@ -362,12 +355,10 @@ class World:
         '''Transforms a pose between two reference frames. If there is a
         TF exception or object does not exist, it will return the pose
         back without any transforms.
-
         Args:
             pose (Pose)
             from_frame (str)
             to_frame (str)
-
         Returns:
             Pose
         '''
@@ -397,13 +388,11 @@ class World:
     @staticmethod
     def pose_distance(pose1, pose2, is_on_table=True):
         '''Returns distance between two world poses.
-
         Args:
             pose1 (Pose)
             pose2 (Pose)
             is_on_table (bool, optional): Whether the objects are on the
                 table (if so, disregards z-values in computations).
-
         Returns:
             float
         '''
@@ -427,7 +416,6 @@ class World:
     def log_pose(log_fn, pose):
         '''For printing a pose to rosout. We don't do it on one line
         becuase that messes up the indentation with the rest of the log.
-
         Args:
             log_fn (function(str)): A logging function that takes a
                 string as an argument. For example, rospy.loginfo.
@@ -437,6 +425,20 @@ class World:
         log_fn(' - position: (%f, %f, %f)' % (p.x, p.y, p.z))
         log_fn(' - orientation: (%f, %f, %f, %f)' % (o.x, o.y, o.z, o.w))
 
+
+
+    @staticmethod
+    def wait_for_selection():
+	#lock = threading.Lock()
+	#lock.acquire()
+	while (World.selected_obj_side == None):
+	    time.sleep(0.01)
+	    #rospy.loginfo(str(World.selected_obj_side))
+	rospy.loginfo("this works")
+	#lock.release()
+	return World.selected_obj_side
+	    
+
     # ##################################################################
     # Static methods: Internal ("private")
     # ##################################################################
@@ -444,11 +446,9 @@ class World:
     @staticmethod
     def _get_mesh_marker(marker, mesh):
         '''Generates and returns a marker from a mesh.
-
         Args:
             marker (Marker)
             mesh (Mesh)
-
         Returns:
             Marker
         '''
@@ -471,11 +471,9 @@ class World:
     @staticmethod
     def _get_surface_marker(pose, dimensions):
         '''Returns a surface marker with provided pose and dimensions.
-
         Args:
             pose (Pose)
             dimensions  (Vector3)
-
         Returns:
             InteractiveMarker
         '''
@@ -537,7 +535,7 @@ class World:
         try:
             resp = self._segmentation_service()
             rospy.loginfo("Adding landmarks")
-
+	    self._obj_sides = []
             self._reset_objects()
 
             # add the table
@@ -571,6 +569,8 @@ class World:
                     maxX = max(maxX, pt.x)
                     maxY = max(maxY, pt.y)
                     maxZ = max(maxZ, pt.z)
+		object_sides_list = {'minX':minX, 'minY':minY, 'minZ':minZ, 'maxX':maxX, 'maxY':maxY, 'maxZ':maxZ}
+		self._obj_sides += [object_sides_list]
                 self._add_new_object(Pose(Point((minX + maxX) / 2, (minY + maxY) / 2,
                                                 (minZ + maxZ) / 2), Quaternion(0, 0, 0, 1)),
                                      Point(maxX - minX, maxY - minY, maxZ - minZ), False)
@@ -605,10 +605,8 @@ class World:
 
     def get_nearest_object(self, arm_pose):
         '''Returns the nearest object, if one exists.
-
         Args:
             arm_pose (Pose): End-effector pose.
-
         Returns:
             Landmark|None: As in Landmark.msg, the nearest object (if it
                 is close enough), or None if there were none close
@@ -630,24 +628,238 @@ class World:
         # We didn't have any objects or none were close enough.
         return None
 
+    '''def closest_marker(self, array, fb):
+	mouse = fb.mouse_point
+	x_vals = []
+	#y_vals = []
+	#z_vals = []
+	for mrker in array:
+	    x_vals += [mrker.pose.position - mouse]
+	    #y_vals += [mrker.pose.position.y - mouse.y]
+	    #z_vals += [mrker.pose.position.z - mouse.z]
+	smallest_x = min(x_vals)
+	#smallest_y = min(y_vals)
+	#smallest_z = min(z_vals)
+	rospy.loginfo(str(smallest_x))
+	#rospy.loginfo(str(smallest_y))
+	#rospy.loginfo(str(smallest_z))'''
+
+
     def marker_feedback_cb(self, feedback):
         '''Callback for when feedback from a marker is received.
-
         Args:
             feedback (InteractiveMarkerFeedback)
         '''
         if feedback.event_type == InteractiveMarkerFeedback.BUTTON_CLICK:
             rospy.loginfo('Clicked on object ' + str(feedback.marker_name))
             rospy.loginfo('Number of objects ' + str(len(World.objects)))
+
+	    object_name = feedback.marker_name
+	    for int_marker in World.master_markers:
+		if int_marker.name == object_name:
+		    master = int_marker
+		    break
+
+	    #rospy.loginfo("\n\n\n" + str(master))
+	    #rospy.loginfo(str(feedback))
+	    #rospy.loginfo(str(feedback.controls))
+	    World.selected_obj_side = feedback
         else:
             # This happens a ton, and doesn't need to be logged like
             # normal events (e.g. clicking on most marker controls
             # fires here).
             rospy.logdebug('Unknown event: ' + str(feedback.event_type))
 
+    def make_mark(self, obj_name):
+	marker = Marker()
+	marker.type = Marker.CUBE
+	marker.header.frame_id = obj_name #BASE_LINK
+	marker.action = Marker.ADD
+	marker.color.r = 0.0
+	marker.color.g = 0.5
+	marker.color.b = 0.5
+	marker.color.a = 0.6
+	return marker
+
+    def make_cont(self, parent):
+	control = InteractiveMarkerControl()
+        control.interaction_mode = InteractiveMarkerControl.BUTTON
+        control.always_visible = True
+	control.name = parent.ns
+	return control
+
+    def make_ref(self, parent):
+	ref = Landmark()
+	ref.type = 1
+	ref.pose.position.x = parent.pose.position.x
+	ref.pose.position.y = parent.pose.position.y
+	ref.pose.position.z = parent.pose.position.z
+	ref.pose.orientation.x = parent.pose.orientation.x
+	ref.pose.orientation.y = parent.pose.orientation.y
+	ref.pose.orientation.z = parent.pose.orientation.z
+	ref.pose.orientation.w = parent.pose.orientation.w
+	ref.name = parent.ns + " Ref"
+	ref.dimensions.x = parent.scale.x
+	ref.dimensions.y = parent.scale.y
+	ref.dimensions.z = parent.scale.z
+	return ref
+
+    def create_sides(self, obj):
+	new_ref = True
+	o_s = self._obj_sides[obj]
+	for thing in o_s:
+	    rospy.loginfo(str(thing))
+	front = self.make_mark(World.objects[obj].get_name())
+	front.id = int(obj) * 10 + 0
+	front.pose.position.x = o_s['minX']
+	front.pose.position.y = (o_s['minY'] + o_s['maxY']) / 2
+	front.pose.position.z = (o_s['minZ'] + o_s['maxZ']) / 2
+	front.scale.x = 0.02
+	front.scale.y = (o_s['maxY'] - o_s['minY'])
+	front.scale.z = (o_s['maxZ'] - o_s['minZ'])
+	front.ns = "Obj #" + str(obj) + " X-Minimum"
+	front_ref = self.make_ref(front)
+	for marker in World.side_markers:
+	    if marker.ns == front.ns:
+		new_ref = False
+		index = World.side_markers.index(marker)
+		World.side_markers[index] = front
+	if new_ref == True:
+	    World.side_markers += [front]
+	else:
+	    pass
+	front_cont = self.make_cont(front)
+	front_cont.markers.append(front)
+	self._marker_controllers += [front_cont]
+	World.side_refs += [front_ref]
+
+	new_ref = True
+	back = self.make_mark(World.objects[obj].get_name())
+	back.id = int(obj) * 10 + 1
+	back.pose.position.x = o_s['maxX']
+	back.pose.position.y = (o_s['minY'] + o_s['maxY']) / 2
+	back.pose.position.z = (o_s['minZ'] + o_s['maxZ']) / 2
+	back.scale.x = 0.02
+	back.scale.y = (o_s['maxY'] - o_s['minY'])
+	back.scale.z = (o_s['maxZ'] - o_s['minZ'])
+	back.ns = "Obj #" + str(obj) + " X-Maximum"
+	back_ref = self.make_ref(back)
+	for marker in World.side_markers:
+	    if marker.ns == back.ns:
+		new_ref = False
+		index = World.side_markers.index(marker)
+		World.side_markers[index] = back
+	if new_ref == True:
+	    World.side_markers += [back]
+	else:
+	    pass
+	back_cont = self.make_cont(back)
+	back_cont.markers.append(back)
+	self._marker_controllers += [back_cont]
+	World.side_refs += [back_ref]
+	
+	new_ref = True
+	right = self.make_mark(World.objects[obj].get_name())
+	right.id = int(obj) * 10 + 2
+	right.pose.position.x = (o_s['minX'] + o_s['maxX']) / 2
+	right.pose.position.y = o_s['minY']
+	right.pose.position.z = (o_s['minZ'] + o_s['maxZ']) / 2
+	right.scale.x = (o_s['maxX'] - o_s['minX'])
+	right.scale.y = 0.02
+	right.scale.z = (o_s['maxZ'] - o_s['minZ'])
+	right.ns = "Obj #" + str(obj) + " Y-Minimum"
+	right_ref = self.make_ref(right)
+	for marker in World.side_markers:
+	    if marker.ns == right.ns:
+		new_ref = False
+		index = World.side_markers.index(marker)
+		World.side_markers[index] = right
+	if new_ref == True:
+	    World.side_markers += [right]
+	else:
+	    pass
+	right_cont = self.make_cont(right)
+	right_cont.markers.append(right)
+	self._marker_controllers += [right_cont]
+	World.side_refs += [right_ref]
+
+	new_ref = True
+	left = self.make_mark(World.objects[obj].get_name())
+	left.id = int(obj) * 10 + 3
+	left.pose.position.x = (o_s['minX'] + o_s['maxX']) / 2
+	left.pose.position.y = o_s['maxY']
+	left.pose.position.z = (o_s['minZ'] + o_s['maxZ']) / 2
+	left.scale.x = (o_s['maxX'] - o_s['minX'])
+	left.scale.y = 0.02
+	left.scale.z = (o_s['maxZ'] - o_s['minZ'])
+	left.ns = "Obj #" + str(obj) + " Y-Maximum"
+	left_ref = self.make_ref(left)
+	for marker in World.side_markers:
+	    if marker.ns == left.ns:
+		new_ref = False
+		index = World.side_markers.index(marker)
+		World.side_markers[index] = left
+	if new_ref == True:
+	    World.side_markers += [left]
+	else:
+	    pass
+	left_cont = self.make_cont(left)
+	left_cont.markers.append(left)
+	self._marker_controllers += [left_cont]
+	World.side_refs += [left_ref]
+
+	new_ref = True
+	base = self.make_mark(World.objects[obj].get_name())
+	base.id = int(obj) * 10 + 4
+	base.pose.position.x = (o_s['minX'] + o_s['maxX']) / 2
+	base.pose.position.y = (o_s['minY'] + o_s['maxY']) / 2
+	base.pose.position.z = o_s['minZ']
+	base.scale.x = (o_s['maxX'] - o_s['minX'])
+	base.scale.y = (o_s['maxY'] - o_s['minY'])
+	base.scale.z = 0.02
+	base.ns = "Obj #" + str(obj) + " Z-Minimum"
+	base_ref = self.make_ref(base)
+	for marker in World.side_markers:
+	    if marker.ns == base.ns:
+		new_ref = False
+		index = World.side_markers.index(marker)
+		World.side_markers[index] = base
+	if new_ref == True:
+	    World.side_markers += [base]
+	else:
+	    pass
+	base_cont = self.make_cont(base)
+	base_cont.markers.append(base)
+	self._marker_controllers += [base_cont]
+	World.side_refs += [base_ref]
+
+	new_ref = True
+	top = self.make_mark(World.objects[obj].get_name())
+	top.id = int(obj) * 10 + 5
+	top.pose.position.x = (o_s['minX'] + o_s['maxX']) / 2
+	top.pose.position.y = (o_s['minY'] + o_s['maxY']) / 2
+	top.pose.position.z = o_s['maxZ']
+	top.scale.x = (o_s['maxX'] - o_s['minX'])
+	top.scale.y = (o_s['maxY'] - o_s['minY'])
+	top.scale.z = 0.02
+	top.ns = "Obj #" + str(obj) + " Z-Maximum"
+	top_ref = self.make_ref(top)
+	for marker in World.side_markers:
+	    if marker.ns == top.ns:
+		new_ref = False
+		index = World.side_markers.index(marker)
+		World.side_markers[index] = top
+	if new_ref == True:
+	    World.side_markers += [top]
+	else:
+	    pass
+	top_cont = self.make_cont(top)
+	top_cont.markers.append(top)
+	self._marker_controllers += [top_cont]
+	World.side_refs += [top_ref]
+
     def update(self):
         '''Update function called in a loop.
-
         Returns:
             bool: Whether any tracked objects were removed, AKA "is
                 world changed."
@@ -665,6 +877,13 @@ class World:
                 )
                 if World.objects[i].is_removed:
                     to_remove = i
+		#rospy.loginfo(str(World.side_refs[i].dimensions))
+		#for j in range():
+		    #self._publish_tf_pose(
+			#World.side_refs[j].pose,
+			#World.side_refs[j].name,
+			#World.objects[i].get_name()
+		    #)
             if to_remove is not None:
                 self._remove_object(to_remove)
                 is_world_changed = True
@@ -687,22 +906,20 @@ class World:
         self._im_server.clear()
         self._im_server.applyChanges()
         World.objects = []
+	World.master_markers = []
         self._lock.release()
 
     def _add_new_object(self, pose, dimensions, is_recognized, mesh=None):
         '''Maybe add a new object with the specified properties to our
         object list.
-
         It might not be added if too similar of an object already
         exists (and has been added).
-
         Args:
             pose (Pose)
             dimensions (Vector3)
             is_recognized (bool)
             mesh (Mesh, optional): A mesh, if it exists. Default is
                 None.
-
         Returns:
             bool: Whether the object was actually added.
         '''
@@ -757,7 +974,6 @@ class World:
         '''Does the 'internal' adding of an object with the passed
         properties. Call _add_new_object to do all pre-requisite checks
         first (it then calls this function).
-
         Args:
             pose (Pose)
             dimensions (Vector3)
@@ -777,12 +993,13 @@ class World:
 
     def _remove_object(self, to_remove):
         '''Remove an object by index.
-
         Args:
             to_remove (int): Index of the object to remove in
                 World.objects.
         '''
+	#sides = self._obj_sides
         obj = World.objects.pop(to_remove)
+	#self.remove_side(to_remove)
         rospy.loginfo('Removing object ' + obj.int_marker.name)
         self._im_server.erase(obj.int_marker.name)
         self._im_server.applyChanges()
@@ -810,15 +1027,15 @@ class World:
 
     def _get_object_marker(self, index, mesh=None):
         '''Generate and return a marker for world objects.
-
         Args:
             index (int): ID for the new marker.
             mesh (Mesh, optional):  Mesh to use for the marker. Only
                 utilized if not None. Defaults to None.
-
         Returns:
             InteractiveMarker
         '''
+	sides = self._obj_sides
+
         int_marker = InteractiveMarker()
         int_marker.name = World.objects[index].get_name()
         int_marker.header.frame_id = 'base_link'
@@ -839,9 +1056,23 @@ class World:
             pose=World.objects[index].object.pose
         )
 
+	self.create_sides(index)
+
         if mesh is not None:
             object_marker = World._get_mesh_marker(object_marker, mesh)
-        button_control.markers.append(object_marker)
+	    button_control.markers.append(object_marker)
+	else:
+	    #objects = len(World.objects)
+	    #for mark in range(len(World.side_markers)-6, len(World.side_markers)):
+	    '''for mark in World.side_markers:
+		rospy.loginfo("mark:\t" + str(mark))'''
+	    rospy.loginfo("Sides: " + str(len(World.side_markers)))
+	    rospy.loginfo("Objects: " + str(len(World.objects)))
+	    rospy.loginfo("Index: " + str(index))
+	    for item in range(len(self._marker_controllers)-(6 * ((len(World.objects)) - (index))), (len(self._marker_controllers) - 6 * ((len(World.objects)) - (index + 1)))):
+		int_marker.controls.append(self._marker_controllers[item])
+
+	#rospy.loginfo(str(int_marker.controls))
 
         text_pos = Point()
         text_pos.x = World.objects[index].object.pose.position.x
@@ -861,12 +1092,12 @@ class World:
             )
         )
         int_marker.controls.append(button_control)
+	World.master_markers += [int_marker]
         return int_marker
 
     def _publish_tf_pose(self, pose, name, parent):
         ''' Publishes a TF for object named name with pose pose and
         parent reference frame parent.
-
         Args:
             pose (Pose): The object's pose.
             name (str): The object's name.
@@ -879,5 +1110,7 @@ class World:
             rot = (po.x, po.y, po.z, po.w)
             # TODO(mbforbes): Is it necessary to change the position
             # and orientation into tuples to send to TF?
+	    #rospy.loginfo("Parent name: " + str(parent))
+	    #rospy.loginfo("Name: " + str(name))
             self._tf_broadcaster.sendTransform(
                 pos, rot, rospy.Time.now(), name, parent)

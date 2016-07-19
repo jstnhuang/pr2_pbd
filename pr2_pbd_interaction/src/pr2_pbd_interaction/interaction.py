@@ -623,7 +623,7 @@ class Interaction:
             step.gripperAction = GripperAction(
                 GripperState(self.arms.get_gripper_state(Side.RIGHT)),
                 GripperState(self.arms.get_gripper_state(Side.LEFT)))
-            self.session.add_step_to_action(step, self.world.get_frame_list())
+            self.session.add_step_to_action(step, self.world.get_frame_list()) # THIS IS WHERE IT HAPPENS!!!!! IT ACCESSES THE OBJECTS AND NOT THE OBJECTS + SIDES
             return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
@@ -884,3 +884,4 @@ class Interaction:
             Response.perform_gaze_action(GazeGoal.SHAKE)
         # No matter what, we're not executing anymore.
         self.arms.status = ExecutionStatus.NOT_EXECUTING
+

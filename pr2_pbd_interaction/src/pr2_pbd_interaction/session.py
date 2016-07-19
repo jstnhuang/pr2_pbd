@@ -464,3 +464,4 @@ class Session:
         # self._object_list here because this method is only called from
         # the constructor, where the object_list is already saved.
         self.actions[self.current_action_id].initialize_viz(object_list)
+
