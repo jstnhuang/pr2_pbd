@@ -94,6 +94,8 @@ class Response:
                   RobotSound.EXECUTION_ENDED, RobotSound.OTHER,
                   RobotSound.STARTING_EXECUTION, RobotSound.SUCCESS]
 
+    _enable_social_gaze = None
+
     def __init__(self, function_to_call, function_param):
         '''
         Args:
@@ -130,8 +132,9 @@ class Response:
             gaze_action (int): One of the constants defined in
                 Gaze.action.
         '''
-        enable_social_gaze = rospy.get_param('/enable_social_gaze', True)
-        if enable_social_gaze:
+        if Response._enable_social_gaze is None:
+            Response._enable_social_gaze = rospy.get_param('/enable_social_gaze', True)
+        if Response._enable_social_gaze:
             goal = GazeGoal()
             goal.action = gaze_action
             Response.gaze_client.send_goal(goal)
@@ -155,8 +158,9 @@ class Response:
         Args:
             point (Point)
         '''
-        enable_social_gaze = rospy.get_param('/enable_social_gaze', True)
-        if enable_social_gaze:
+        if Response._enable_social_gaze is None:
+            Response._enable_social_gaze = rospy.get_param('/enable_social_gaze', True)
+        if Response._enable_social_gaze:
             Response.gaze_client.send_goal(GazeGoal(GazeGoal.LOOK_AT_POINT, point))
 
     @staticmethod
