@@ -24,6 +24,8 @@ before_install:
 
 notifications:
     email: false
+    slack:
+      secure: "CImhCndn+xGNxWIaJDHz2GVhrs+EKvctfWW7XpgSYc3RyaEv3Nc9RLOxnLyjMrljXtxR7dIQ9GiN0YCMMeHZ8S2XAZkUMDSFBfxLoI+tW9H+RKqF7cG5KLtEH6TgMNxP5ZD0+0P9Ie70E4VTLrsaiu5O2yPo5KC/yhLlSDqbd8s="
 
 # Commands to install dependencies
 # --------------------------------
