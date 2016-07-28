@@ -138,6 +138,7 @@ class ActionStepMarker:
         self.has_object = False
 
         self._sub_entries = None
+	self._menu_options = None
 	self._side_refs = []
         self._menu_handler = None
         self._prev_is_reachable = None
@@ -242,7 +243,6 @@ class ActionStepMarker:
         ActionStepMarker._ref_object_list = ref_frame_list
 	ActionStepMarker._ref_object_list += World.side_refs
         arm_pose = self.get_target()
-	rospy.loginfo("Arm_pose: " + str(arm_pose) + " Message done")
         if arm_pose.refFrame == ArmState.OBJECT:
             prev_ref_obj = arm_pose.refFrameLandmark
             new_ref_obj = World.get_most_similar_obj(
@@ -388,13 +388,17 @@ class ActionStepMarker:
         self.is_requested = False
 
     def subent_cb(self, feedback):
-        '''Callback for when a reference frame change is requested.
+        '''Callback for when a reference frame obj/surface center change is requested.
 
         Args:
             feedback (InteractiveMarkerFeedback (?))
         '''
+	if "Obj" in self._get_ref_name():
+	    menu_id = self._menu_options[-1]
+	else:
+	    menu_id = self._get_menu_id(self._get_ref_name())
         self._menu_handler.setCheckState(
-            self._get_menu_id(self._get_ref_name()), MenuHandler.UNCHECKED)
+            menu_id, MenuHandler.UNCHECKED)
         self._menu_handler.setCheckState(
             feedback.menu_entry_id, MenuHandler.CHECKED)
         new_ref = self._get_menu_name(feedback.menu_entry_id)
@@ -407,24 +411,22 @@ class ActionStepMarker:
         self.update_viz()
 
     def select_one_cb(self, feedback):
+	'''Callback for when a reference frame change to an object side is requested.
+	
+	Args:
+	    feedback (InteractiveMarkerFeedback (?))
+	'''
 	World.selected_obj_side = None
 	state = self._menu_handler.getCheckState(feedback.menu_entry_id)
-	#rospy.loginfo(str(state))
-	#rospy.loginfo(str(feedback.event_type))
-	'''if state == MenuHandler.CHECKED:
-	    self._menu_handler.setCheckState(feedback.menu_entry_id - 3, MenuHandler.UNCHECKED)
-	else:
-	    self._menu_handler.setCheckState(feedback.menu_entry_id - 3, MenuHandler.CHECKED)'''
+	self._menu_handler.setCheckState(self._get_menu_id(self._get_ref_name()), MenuHandler.UNCHECKED)
+	self._menu_handler.setCheckState(feedback.menu_entry_id, MenuHandler.CHECKED)
 	rospy.loginfo('Left-click on a marker side to use it as a reference frame')
 	ref_marker = World.wait_for_selection()
-	#rospy.loginfo(str(ref_marker))
 
 	for obj in World.get_frame_list():
-	    rospy.loginfo("\n\n" + str(obj))
 	    if obj.name == World.selected_obj_side.marker_name:
 		obj_num = World.get_frame_list().index(obj)
 		rospy.loginfo(str(obj_num))
-	#rospy.loginfo("Obj_num position: " + str(World.get_frame_list()[obj_num].pose))
 
 	if "X-Minimum" in World.selected_obj_side.control_name:
 	    self._set_ref('Obj #' + str(obj_num) + ' X-Minimum Ref')
@@ -551,6 +553,7 @@ class ActionStepMarker:
 
         # Insert sub entries.
         self._sub_entries = []
+	self._menu_options = []
         frame_entry = self._menu_handler.insert(MENU_OPTIONS['ref'])
         refs = ActionStepMarker._ref_names
         for ref in refs:
@@ -558,12 +561,15 @@ class ActionStepMarker:
         	subent = self._menu_handler.insert(
                 	ref + ' center', parent=frame_entry, callback=self.subent_cb)
         	self._sub_entries += [subent]
+		self._menu_options += [subent]
 	    elif ref == BASE_LINK:
 		subent = self._menu_handler.insert(
                 	ref, parent=frame_entry, callback=self.subent_cb)
         	self._sub_entries += [subent]
+		self._menu_options += [subent]
 	select_one = self._menu_handler.insert(
 		    'Select an object side', parent=frame_entry, callback=self.select_one_cb)
+	self._menu_options += [select_one]
 	    
 
         # Inset main menu entries.
@@ -577,7 +583,7 @@ class ActionStepMarker:
         # Make all unchecked to start.
         for subent in self._sub_entries:
             self._menu_handler.setCheckState(subent, MenuHandler.UNCHECKED)
-	#self._menu_handler.setCheckState(select_one, MenuHandler.UNCHECKED)
+	self._menu_handler.setCheckState(select_one, MenuHandler.UNCHECKED)
 
         # Check if necessary. Set base_link to checked
         menu_id = self._get_menu_id(self._get_ref_name())
@@ -600,10 +606,10 @@ class ActionStepMarker:
         '''
         if ref_name in ActionStepMarker._ref_names:
             index = ActionStepMarker._ref_names.index(ref_name)
-	    if index > len(self._sub_entries):
-		pass
-		#return ref sides at index
-            return self._sub_entries[index]
+	    if "Obj" in ref_name:
+		return (self._menu_options[-1])
+	    else:
+        	return self._menu_options[index]
         else:
             return None
 
@@ -613,7 +619,7 @@ class ActionStepMarker:
         Returns:
             str
         '''
-        index = self._sub_entries.index(menu_id)
+        index = self._menu_options.index(menu_id)
         return ActionStepMarker._ref_names[index]
 
     def _get_ref_name(self):
@@ -629,20 +635,11 @@ class ActionStepMarker:
             # "Normal" step (saved pose).
             t = self.action_step.armTarget
             arm = t.rArm if self.arm_index == Side.RIGHT else t.lArm
-            ref_frame = arm.refFrame
+	    ref_frame = arm.refFrame
             ref_name = arm.refFrameLandmark.name
         else:
             rospy.logerr(
                 'Unhandled marker type: ' + str(self.action_step.type))
-        '''elif self.action_step.type == ActionStep.ARM_TRAJECTORY:
-            # "Trajectory" step.
-            t = self.action_step.armTrajectory
-            if self.arm_index == Side.RIGHT:
-                ref_frame = t.rRefFrame
-                ref_name = t.rRefFrameLandmark.name
-            else:
-                ref_frame = t.lRefFrame
-                ref_name = t.lRefFrameLandmark.name'''
 
         # Update ref frame name if it's absolute.
         if ref_frame == ArmState.ROBOT_BASE:
@@ -672,22 +669,6 @@ class ActionStepMarker:
                 t.rArm = World.convert_ref_frame(t.rArm, new_ref, new_ref_obj)
             else:
                 t.lArm = World.convert_ref_frame(t.lArm, new_ref, new_ref_obj)
-        '''elif self.action_step.type == ActionStep.ARM_TRAJECTORY:
-            # Handle trajectory steps.
-            t = self.action_step.armTrajectory
-            arm = t.rArm if self.arm_index == Side.RIGHT else t.lArm
-            for i in range(len(arm)):
-                arm_old = arm[i]
-                arm_new = World.convert_ref_frame(
-                    arm_old, new_ref, new_ref_obj)
-                arm[i] = arm_new
-            # Fix up reference frames.
-            if self.arm_index == Side.RIGHT:
-                t.rRefFrameLandmark = new_ref_obj
-                t.rRefFrame = new_ref
-            else:
-                t.lRefFrameLandmark = new_ref_obj
-                t.lRefFrame = new_ref'''
 
     def _is_hand_open(self):
         '''Returns whether the gripper is open for this action step.
@@ -815,9 +796,7 @@ class ActionStepMarker:
         int_marker = InteractiveMarker()
         int_marker.name = self._get_name()
         int_marker.header.frame_id = frame_id
-	rospy.loginfo("Frame_id: " + str(frame_id))
         int_marker.pose = pose
-	#rospy.loginfo("Int_marker: " + str(int_marker))
         int_marker.scale = INT_MARKER_SCALE
         self._add_6dof_marker(int_marker, True)
         int_marker.controls.append(menu_control)
