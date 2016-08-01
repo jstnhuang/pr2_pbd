@@ -261,8 +261,7 @@ class Interaction:
 
         # Because the GUI commands involve selecting actions or steps
         # within actions, we have two prerequisites: first, we cannot be
-        # currently executing an action, and second, we must have at
-        # least one action.
+        # currently executing an action, and second, we must have at least one action.
         if not self.arms.is_executing():
             if strCmd == GuiCommand.SWITCH_TO_ACTION:
                 index = int(command.param) - 1
@@ -623,7 +622,7 @@ class Interaction:
             step.gripperAction = GripperAction(
                 GripperState(self.arms.get_gripper_state(Side.RIGHT)),
                 GripperState(self.arms.get_gripper_state(Side.LEFT)))
-            self.session.add_step_to_action(step, self.world.get_frame_list()) # THIS IS WHERE IT HAPPENS!!!!! IT ACCESSES THE OBJECTS AND NOT THE OBJECTS + SIDES
+            self.session.add_step_to_action(step, self.world.get_frame_list())
             return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]

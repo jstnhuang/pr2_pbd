@@ -313,8 +313,7 @@ class ActionStepMarker:
             t = self.action_step.armTrajectory
             arm = t.rArm if self.arm_index == Side.RIGHT else t.lArm
             # TODO(mbforbes): Make sure this isn't a bug in the original
-            # implementation. Wouldn't is_start imply you want the first
-            # one?
+            # implementation. Wouldn't is_start imply you want the first one?
             index = len(arm) - 1 if is_start else 0
             arm_pose = arm[index]
 
@@ -349,7 +348,6 @@ class ActionStepMarker:
                 at.rArm = target
             else:
                 at.lArm = target
-            # TODO(mbforbes): Why is self.has_object set to True here?
             self.has_object = True
             self._update_menu()
         self.is_edited = False
@@ -426,7 +424,6 @@ class ActionStepMarker:
 	for obj in World.get_frame_list():
 	    if obj.name == World.selected_obj_side.marker_name:
 		obj_num = World.get_frame_list().index(obj)
-		rospy.loginfo(str(obj_num))
 
 	if "X-Minimum" in World.selected_obj_side.control_name:
 	    self._set_ref('Obj #' + str(obj_num) + ' X-Minimum Ref')

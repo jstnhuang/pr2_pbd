@@ -428,11 +428,12 @@ class World:
 
     @staticmethod
     def wait_for_selection():
-	'''This is pretty much a busy loop that waits for an object to be selected.
+	'''Waits for an object side to be selected.
 
 	Returns:
 	    World.selected_obj_side (InteractiveMarkerFeedback)
 	'''
+	World.selected_obj_side = None
 	while (World.selected_obj_side == None):
 	    time.sleep(0.01)
 	return World.selected_obj_side

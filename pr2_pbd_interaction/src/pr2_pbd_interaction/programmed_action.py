@@ -563,8 +563,7 @@ class ProgrammedAction:
                 r_ref = step.armTrajectory.rRefFrame
                 l_ref = step.armTrajectory.lRefFrame
 
-            # Logic: If either reference frame is to an object, we
-            # return true.
+            # Logic: If either reference frame is to an object, we return true.
             if r_ref == ArmState.OBJECT or l_ref == ArmState.OBJECT:
                 is_required = True
                 break
@@ -733,7 +732,7 @@ class ProgrammedAction:
             self.l_links[i] = self._get_link(Side.LEFT, i)
 
     def _get_filename(self, ext=DEFAULT_FILE_EXT):
-        '''Returns the filename for the bag that holds this action.
+        '''Returns the filename of the bag that holds this action.
 
         Returns:
             str
