@@ -16,9 +16,6 @@ Clone this repository and build on both your desktop machine and on the robot:
 cd ~/catkin_ws/src
 git clone https://github.com/jstnhuang/mongo_msg_db_msgs.git
 git clone https://github.com/jstnhuang/mongo_msg_db.git
-git clone https://github.com/jstnhuang/agile_grasp.git
-git clone https://github.com/hcrlab/blinky.git
-git clone https://github.com/jstnhuang/rapid.git
 git clone https://github.com/PR2/pr2_pbd.git
 cd ~/catkin_ws
 rosdep install --from-paths src --ignore-src --rosdistro=hydro -y
