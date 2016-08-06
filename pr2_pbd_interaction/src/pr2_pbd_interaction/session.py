@@ -47,14 +47,16 @@ PARAM_DATA_DIR = 'data_directory'
 class Session:
     '''This class holds and maintains experimental data.'''
 
-    def __init__(self, object_list, db):
+    def __init__(self, world, object_list, db):
         '''
         Args:
+            world: A World object
             object_list ([Landmark]): List of Landmark (as defined by
                 Landmark.msg), the current reference frames.
             db: An ActionDatabase object (db.py)
         '''
         # Private attirbutes.
+        self._world = world
         self._is_reload = rospy.get_param(PARAM_IS_RELOAD)
         self._exp_number = None
         self._selected_step = 0
@@ -154,7 +156,7 @@ class Session:
         name = 'Untitled action {}'.format(time_str)
         action_id = self._db.insert_new(name)
         self.current_action_id = action_id
-        action = ProgrammedAction(self.current_action_id, self._selected_step_cb)
+        action = ProgrammedAction(self._world, self.current_action_id, self._selected_step_cb)
         action.name = name
         self.actions.update({
             self.current_action_id: action
@@ -248,7 +250,7 @@ class Session:
                 return False
             self.actions.update({
                 self.current_action_id: ProgrammedAction.from_msg(
-                    msg, self.current_action_id, self._selected_step_cb)
+                    msg, self._world, self.current_action_id, self._selected_step_cb)
             })
             self._session_actions.append(db_id)
         self._update_experiment_state()
@@ -452,7 +454,7 @@ class Session:
         n_actions = exp_state[YAML_KEY_NACTIONS]
         session_actions = exp_state[YAML_KEY_ACTION_LIST]
         for action_id in session_actions:
-            self.actions[action_id] = ProgrammedAction(action_id,
+            self.actions[action_id] = ProgrammedAction(self._world, action_id,
                                                        self._selected_step_cb)
             # Load each action's data from a ROS bag.
             self.actions[action_id].load(self._data_dir)

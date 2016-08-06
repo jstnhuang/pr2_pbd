@@ -30,7 +30,6 @@ from pr2_pbd_speech_recognition.msg import Command
 from pr2_social_gaze.msg import GazeGoal
 from response import Response
 from robot_speech import RobotSpeech
-from world import World
 from std_msgs.msg import String
 
 # ######################################################################
@@ -66,7 +65,7 @@ class Interaction:
 
     def __init__(self, arms, session, world):
         # Create main components.
-        self.world = world
+        self._world = world
         self.arms = arms
         self.session = session
 
@@ -207,10 +206,10 @@ class Interaction:
 
             # If the objects in the world have changed, update the
             # action with them.
-            if self.world.update():
+            if self._world.update():
                 rospy.loginfo('The world has changed.')
                 self.session.get_current_action().update_objects(
-                    self.world.get_frame_list())
+                    self._world.get_frame_list())
 
     # The following methods receive commands from speech / GUI and
     # process them. These are the multiplexers.
@@ -297,7 +296,7 @@ class Interaction:
         '''
         # Command: switch to a specified action.
         success = self.session.switch_to_action_by_index(
-            index, self.world.get_frame_list())
+            index, self._world.get_frame_list())
         if not success:
             response = Response(self._empty_response,
                                 [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
@@ -322,7 +321,7 @@ class Interaction:
             A Response, specifying how the robot should respond to this action.
         '''
         success = self.session.switch_to_action(action_id,
-                                                self.world.get_frame_list())
+                                                self._world.get_frame_list())
         if not success:
             response = Response(self._empty_response,
                                 [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
@@ -444,7 +443,7 @@ class Interaction:
         Returns:
             [str, int]: a speech response and a GazeGoal.* constant
         '''
-        self.world.clear_all_objects()
+        self._world.clear_all_objects()
         self.session.new_action()
         return [RobotSpeech.SKILL_CREATED + ' ' +
                 str(self.session.current_action_id), GazeGoal.NOD]
@@ -459,7 +458,7 @@ class Interaction:
             [str, int]: a speech response and a GazeGoal.* constant
         '''
         if self.session.n_actions() > 0:
-            if self.session.next_action(self.world.get_frame_list()):
+            if self.session.next_action(self._world.get_frame_list()):
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
                         str(self.session.current_action_id), GazeGoal.NOD]
             else:
@@ -478,7 +477,7 @@ class Interaction:
             [str, int]: a speech response and a GazeGoal.* constant
         '''
         if self.session.n_actions() > 0:
-            if self.session.previous_action(self.world.get_frame_list()):
+            if self.session.previous_action(self._world.get_frame_list()):
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
                         str(self.session.current_action_id), GazeGoal.NOD]
             else:
@@ -593,7 +592,7 @@ class Interaction:
                 GripperState(self.arms.get_gripper_state(Side.RIGHT)),
                 GripperState(self.arms.get_gripper_state(Side.LEFT)))
             self.session.add_step_to_action(traj_step,
-                                            self.world.get_frame_list())
+                                            self._world.get_frame_list())
             self._arm_trajectory = None
             self._trajectory_start_time = None
             return [RobotSpeech.STOPPED_RECORDING_MOTION + ' ' +
@@ -623,7 +622,7 @@ class Interaction:
             step.gripperAction = GripperAction(
                 GripperState(self.arms.get_gripper_state(Side.RIGHT)),
                 GripperState(self.arms.get_gripper_state(Side.LEFT)))
-            self.session.add_step_to_action(step, self.world.get_frame_list())
+            self.session.add_step_to_action(step, self._world.get_frame_list())
             return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
@@ -639,10 +638,10 @@ class Interaction:
         Returns:
             [str, int]: a speech response and a GazeGoal.* constant
         '''
-        if self.world.update_object_pose():
+        if self._world.update_object_pose():
             if self.session.n_actions() > 0:
                 self.session.get_current_action().update_objects(
-                    self.world.get_frame_list())
+                    self._world.get_frame_list())
             return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
         else:
             return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
@@ -680,11 +679,11 @@ class Interaction:
                 # Now, see if we can execute.
                 if self.session.get_current_action().is_object_required():
                     # We need an object; check if we have one.
-                    if self.world.update_object_pose():
-                        self.world.update()
+                    if self._world.update_object_pose():
+                        self._world.update()
                         # An object is required, and we got one. Execute.
                         self.session.get_current_action().update_objects(
-                            self.world.get_frame_list())
+                            self._world.get_frame_list())
                         self.arms.start_execution(
                             self.session.get_current_action(),
                             EXECUTION_Z_OFFSET)
@@ -736,7 +735,7 @@ class Interaction:
             step.gripperAction = GripperAction(
                 GripperState(new_gripper_states[Side.RIGHT]),
                 GripperState(new_gripper_states[Side.LEFT]))
-            self.session.add_step_to_action(step, self.world.get_frame_list())
+            self.session.add_step_to_action(step, self._world.get_frame_list())
 
     def _fix_trajectory_ref(self):
         '''Makes the reference frame of continuous trajectories
@@ -748,7 +747,7 @@ class Interaction:
         reference frame (again, separate for right and left arms).
         '''
         # First, get objects from the world.
-        frame_list = self.world.get_frame_list()
+        frame_list = self._world.get_frame_list()
 
         # Next, find the dominant reference frame (e.g. robot base,
         # an object).
@@ -759,12 +758,12 @@ class Interaction:
         # Next, alter all trajectory steps (ArmState's) so that they use
         # the dominant reference frame as their reference frame.
         for i in range(len(self._arm_trajectory.timing)):
-            t.rArm[i] = World.convert_ref_frame(
+            t.rArm[i] = self._world.convert_ref_frame(
                 self._arm_trajectory.rArm[i],  # arm_frame (ArmState)
                 r_ref_n,  # ref_frame (int)
                 r_ref_obj  # ref_frame_obj (Objet)
             )
-            t.lArm[i] = World.convert_ref_frame(
+            t.lArm[i] = self._world.convert_ref_frame(
                 self._arm_trajectory.lArm[i],  # arm_frame (ArmState)
                 l_ref_n,  # ref_frame (int)
                 l_ref_obj  # ref_frame_obj (Objet)
@@ -812,7 +811,7 @@ class Interaction:
         dominant_ref_obj = ref_counts.most_common(1)[0][0]
 
         # Find the frame number (int) and return with the object.
-        return World.get_ref_from_name(dominant_ref_obj.name), dominant_ref_obj
+        return world.get_ref_from_name(dominant_ref_obj.name), dominant_ref_obj
 
     def _save_arm_to_trajectory(self):
         '''Saves current arm state into continuous trajectory.'''
@@ -841,9 +840,9 @@ class Interaction:
         rel_ee_poses = [None, None]
 
         for arm_index in [Side.RIGHT, Side.LEFT]:
-            nearest_obj = self.world.get_nearest_object(
+            nearest_obj = self._world.get_nearest_object(
                 abs_ee_poses[arm_index])
-            if not World.has_objects() or nearest_obj is None:
+            if not self._world.has_objects() or nearest_obj is None:
                 # Arm state is absolute (relative to robot's base_link).
                 states[arm_index] = ArmState(
                     ArmState.ROBOT_BASE,  # refFrame (uint8)
@@ -853,7 +852,7 @@ class Interaction:
                 )
             else:
                 # Arm state is relative (to some object in the world).
-                rel_ee_poses[arm_index] = World.transform(
+                rel_ee_poses[arm_index] = self._world.transform(
                     abs_ee_poses[arm_index],  # pose (Pose)
                     BASE_LINK,  # from_frame (str)
                     nearest_obj.name  # to_frame (str)

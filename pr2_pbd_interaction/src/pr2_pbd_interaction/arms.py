@@ -22,8 +22,6 @@ from pr2_arm_control.msg import ArmMode, GripperState, Side
 from pr2_pbd_interaction.msg import ArmState, ActionStep, ExecutionStatus
 from pr2_social_gaze.msg import GazeGoal
 from response import Response
-from world import World
-
 
 # ######################################################################
 # Module level constants
@@ -48,16 +46,18 @@ TRAJECTORY_COMPLETE_SLEEP_INTERVAL = 0.01  # seconds
 # opening/closing.
 GRIPPER_FINISH_SLEEP_INTERVAL = 0.01  # seconds
 
-
 # ######################################################################
 # Classes
 # ######################################################################
+
 
 class Arms:
     '''Class for things related to moving arms.'''
     arms = [None, None]
 
-    def __init__(self, tf_listener):
+    def __init__(self, tf_listener, world):
+        self._world = world
+
         # Create two arms; initialize their individual state.
         for side in SIDES:
             arm = Arm(side, tf_listener)
@@ -123,7 +123,7 @@ class Arms:
             return True
 
     @staticmethod
-    def solve_ik_for_arm(arm_index, arm_state, z_offset=0.0):
+    def solve_ik_for_arm(world, arm_index, arm_state, z_offset=0.0):
         '''Finds an  IK solution for a particular arm pose.
 
         Args:
@@ -154,8 +154,9 @@ class Arms:
         if arm_state.refFrame == ArmState.OBJECT:
             # Arm is relative.
             solution = ArmState()
-            target_pose = World.transform(
-                arm_state.ee_pose, arm_state.refFrameLandmark.name, 'base_link')
+            target_pose = world.transform(arm_state.ee_pose,
+                                          arm_state.refFrameLandmark.name,
+                                          'base_link')
             target_pose.position.z = target_pose.position.z + z_offset
 
             # Try solving IK.
@@ -171,8 +172,8 @@ class Arms:
                 # Found a solution; update the solution arm_state and
                 # return.
                 solution.refFrame = ArmState.ROBOT_BASE
-                solution.ee_pose = Pose(
-                    target_pose.position, target_pose.orientation)
+                solution.ee_pose = Pose(target_pose.position,
+                                        target_pose.orientation)
                 solution.joint_pose = target_joints
                 return solution, True
         elif arm_state.refFrame == ArmState.ROBOT_BASE:
@@ -192,8 +193,8 @@ class Arms:
                 # IK found; fill in solution ArmState and return.
                 solution = ArmState()
                 solution.refFrame = ArmState.ROBOT_BASE
-                solution.ee_pose = Pose(
-                    arm_state.ee_pose.position, arm_state.ee_pose.orientation)
+                solution.ee_pose = Pose(arm_state.ee_pose.position,
+                                        arm_state.ee_pose.orientation)
                 solution.joint_pose = target_joints
                 return solution, True
         else:
@@ -270,13 +271,12 @@ class Arms:
         '''
         # TODO(mbforbes): Refactor with SIDES.
         if (Arms.arms[Side.RIGHT].get_movement() < ARM_MOVEMENT_THRESHOLD and
-                Arms.arms[Side.LEFT].get_movement() < ARM_MOVEMENT_THRESHOLD):
+            Arms.arms[Side.LEFT].get_movement() < ARM_MOVEMENT_THRESHOLD):
             return -1
         elif Arms.arms[Side.RIGHT].get_movement() < ARM_MOVEMENT_THRESHOLD:
             return Side.LEFT
         else:
             return Side.RIGHT
-
 
     # ##################################################################
     # Instance methods: Public (API)
@@ -304,11 +304,9 @@ class Arms:
         self.action = action.copy()
         self.preempt = False
         self.z_offset = z_offset
-        thread = threading.Thread(
-            group=None,
-            target=self.execute_action,
-            name='action_execution_thread'
-        )
+        thread = threading.Thread(group=None,
+                                  target=self.execute_action,
+                                  name='action_execution_thread')
         thread.start()
 
     def stop_execution(self):
@@ -330,15 +328,11 @@ class Arms:
             if self.action.seq.seq[i].type == ActionStep.ARM_TARGET:
                 # Solve IK for both arms.
                 r_arm, has_solution_r = Arms.solve_ik_for_arm(
-                    Side.RIGHT,
-                    self.action.seq.seq[i].armTarget.rArm,
-                    self.z_offset
-                )
+                    self._world, Side.RIGHT,
+                    self.action.seq.seq[i].armTarget.rArm, self.z_offset)
                 l_arm, has_solution_l = Arms.solve_ik_for_arm(
-                    Side.LEFT,
-                    self.action.seq.seq[i].armTarget.lArm,
-                    self.z_offset
-                )
+                    self._world, Side.LEFT,
+                    self.action.seq.seq[i].armTarget.lArm, self.z_offset)
                 self.action.seq.seq[i].armTarget.rArm = r_arm
                 self.action.seq.seq[i].armTarget.lArm = l_arm
 
@@ -354,15 +348,13 @@ class Arms:
                 for j in range(n_frames):
                     # Solve IK for both arms.
                     r_arm, has_solution_r = Arms.solve_ik_for_arm(
-                        Side.RIGHT,
+                        self._world, Side.RIGHT,
                         self.action.seq.seq[i].armTrajectory.rArm[j],
-                        self.z_offset
-                    )
+                        self.z_offset)
                     l_arm, has_solution_l = Arms.solve_ik_for_arm(
-                        Side.LEFT,
+                        self._world, Side.LEFT,
                         self.action.seq.seq[i].armTrajectory.lArm[j],
-                        self.z_offset
-                    )
+                        self.z_offset)
                     self.action.seq.seq[i].armTrajectory.rArm[j] = r_arm
                     self.action.seq.seq[i].armTrajectory.lArm[j] = l_arm
 
@@ -383,12 +375,10 @@ class Arms:
             arm_index (int): Side.RIGHT or Side.LEFT
         '''
         self.preempt = False
-        thread = threading.Thread(
-            group=None,
-            target=self.move_to_pose,
-            args=(arm_state, arm_index,),
-            name='move_to_arm_state_thread'
-        )
+        thread = threading.Thread(group=None,
+                                  target=self.move_to_pose,
+                                  args=(arm_state, arm_index, ),
+                                  name='move_to_arm_state_thread')
         thread.start()
 
         # Log
@@ -405,7 +395,8 @@ class Arms:
             arm_index (int): Side.RIGHT or Side.LEFT
         '''
         self.status = ExecutionStatus.EXECUTING
-        solution, has_solution = Arms.solve_ik_for_arm(arm_index, arm_state)
+        solution, has_solution = Arms.solve_ik_for_arm(self_world, arm_index,
+                                                       arm_state)
         if has_solution:
             # Do the raw movement (this only moves arm_index arm).
             if arm_index == Side.RIGHT:
@@ -477,9 +468,11 @@ class Arms:
         time_to_l_pose = None
 
         if r_arm is not None:
-            time_to_r_pose = self.arms[Side.RIGHT].get_time_to_pose(r_arm.ee_pose)
-        if l_arm is not None: 
-            time_to_l_pose = self.arms[Side.LEFT].get_time_to_pose(l_arm.ee_pose)
+            time_to_r_pose = self.arms[Side.RIGHT].get_time_to_pose(
+                r_arm.ee_pose)
+        if l_arm is not None:
+            time_to_l_pose = self.arms[Side.LEFT].get_time_to_pose(
+                l_arm.ee_pose)
 
         # If both arms are moving, adjust velocities and find most
         # moving arm. Look at it.
@@ -500,15 +493,15 @@ class Arms:
 
         # Move arms to target.
         if is_r_moving:
-            Arms.arms[Side.RIGHT].move_to_joints(
-                r_arm.joint_pose, time_to_r_pose)
+            Arms.arms[Side.RIGHT].move_to_joints(r_arm.joint_pose,
+                                                 time_to_r_pose)
         if is_l_moving:
-            Arms.arms[Side.LEFT].move_to_joints(
-                l_arm.joint_pose, time_to_l_pose)
+            Arms.arms[Side.LEFT].move_to_joints(l_arm.joint_pose,
+                                                time_to_l_pose)
 
         # Wait until both arms complete the trajectory.
-        while((Arms.arms[Side.RIGHT].is_executing() or
-               Arms.arms[Side.LEFT].is_executing()) and not self.preempt):
+        while ((Arms.arms[Side.RIGHT].is_executing() or
+                Arms.arms[Side.LEFT].is_executing()) and not self.preempt):
             rospy.sleep(MOVE_TO_JOINTS_SLEEP_INTERVAL)
         rospy.loginfo('\tArms reached target.')
 
@@ -518,7 +511,7 @@ class Arms:
         for side in SIDES:
             suc[side] = Arms.arms[side].is_successful()
         if ((is_r_moving and not suc[Side.RIGHT]) or
-                (is_l_moving and not suc[Side.LEFT])):
+            (is_l_moving and not suc[Side.LEFT])):
             # DEBUG: remove
             rospy.logwarn('\t[DEBUG] R arm success: ' + str(suc[Side.RIGHT]))
             rstatus = Arms.arms[Side.RIGHT].traj_action_client.get_state()
@@ -572,9 +565,8 @@ class Arms:
                 break
             # Check that preconditions are met
             elif not Arms.is_condition_met(action_step.preCond):
-                rospy.logwarn(
-                    '\tPreconditions of action step ' + str(i) + ' are not ' +
-                    'satisfied. Aborting.')
+                rospy.logwarn('\tPreconditions of action step ' + str(i) +
+                              ' are not ' + 'satisfied. Aborting.')
                 self.status = ExecutionStatus.CONDITION_ERROR
                 break
             else:
@@ -586,9 +578,8 @@ class Arms:
                 if Arms.is_condition_met(action_step.postCond):
                     rospy.loginfo('\tPost-conditions of the action are met.')
                 else:
-                    rospy.logwarn(
-                        '\tPost-conditions of action step ' + str(i) +
-                        ' are not satisfied. Aborting.')
+                    rospy.logwarn('\tPost-conditions of action step ' + str(i)
+                                  + ' are not satisfied. Aborting.')
                     self.status = ExecutionStatus.CONDITION_ERROR
                     break
 
@@ -617,8 +608,8 @@ class Arms:
             # Arm target.
             rospy.loginfo('\tWill perform arm target action step.')
             # Try moving to the joints.
-            if not self.move_to_joints(
-                    action_step.armTarget.rArm, action_step.armTarget.lArm):
+            if not self.move_to_joints(action_step.armTarget.rArm,
+                                       action_step.armTarget.lArm):
                 # We may have been pre-empted.
                 if self.preempt:
                     self.status = ExecutionStatus.PREEMPTED
@@ -631,9 +622,8 @@ class Arms:
             # Arm trajectory.
             rospy.loginfo('\tWill perform arm trajectory action step.')
             # First move to the start frame.
-            if not self.move_to_joints(
-                    action_step.armTrajectory.rArm[0],
-                    action_step.armTrajectory.lArm[0]):
+            if not self.move_to_joints(action_step.armTrajectory.rArm[0],
+                                       action_step.armTrajectory.lArm[0]):
                 # We may have been pre-empted.
                 if self.preempt:
                     self.status = ExecutionStatus.PREEMPTED
@@ -647,22 +637,20 @@ class Arms:
             # Then execute the trajectory.
             Arms.arms[Side.RIGHT].execute_joint_traj(
                 action_step.armTrajectory.rArm,
-                action_step.armTrajectory.timing
-            )
+                action_step.armTrajectory.timing)
             Arms.arms[Side.LEFT].execute_joint_traj(
                 action_step.armTrajectory.lArm,
-                action_step.armTrajectory.timing
-            )
+                action_step.armTrajectory.timing)
 
             # Wait until both arms complete the trajectory.
-            while((Arms.arms[Side.RIGHT].is_executing() or
+            while ((Arms.arms[Side.RIGHT].is_executing() or
                     Arms.arms[Side.LEFT].is_executing()) and not self.preempt):
                 rospy.sleep(TRAJECTORY_COMPLETE_SLEEP_INTERVAL)
             rospy.loginfo('\tTrajectory complete.')
 
             # Verify that both arms succeeded.
             if (not Arms.arms[Side.RIGHT].is_successful() or
-                    not Arms.arms[Side.LEFT].is_successful()):
+                not Arms.arms[Side.LEFT].is_successful()):
                 rospy.logwarn(
                     '\tAborting execution; arms failed to follow trajectory.')
                 # We may have been pre-empted.
@@ -677,33 +665,31 @@ class Arms:
 
         # If hand action, do it for both sides.
         if (action_step.gripperAction.rGripper.state !=
-                Arms.arms[Side.RIGHT].get_gripper_state()):
+            Arms.arms[Side.RIGHT].get_gripper_state()):
             # TODO(mbforbes): Make this logging better (output 'close'
             # or 'open' instead of numbers).
-            rospy.loginfo(
-                '\tWill perform right gripper action ' +
-                str(action_step.gripperAction.rGripper.state))
+            rospy.loginfo('\tWill perform right gripper action ' +
+                          str(action_step.gripperAction.rGripper.state))
             Arms.arms[Side.RIGHT].set_gripper(
                 action_step.gripperAction.rGripper.state)
             Response.perform_gaze_action(GazeGoal.FOLLOW_RIGHT_EE)
         if (action_step.gripperAction.lGripper.state !=
-                Arms.arms[Side.LEFT].get_gripper_state()):
-            rospy.loginfo(
-                '\tWill perform left gripper action ' +
-                str(action_step.gripperAction.lGripper.state))
+            Arms.arms[Side.LEFT].get_gripper_state()):
+            rospy.loginfo('\tWill perform left gripper action ' +
+                          str(action_step.gripperAction.lGripper.state))
             Arms.arms[Side.LEFT].set_gripper(
                 action_step.gripperAction.lGripper.state)
             Response.perform_gaze_action(GazeGoal.FOLLOW_LEFT_EE)
 
         # Wait for grippers to be done
         while (Arms.arms[Side.RIGHT].is_gripper_moving() or
-                Arms.arms[Side.LEFT].is_gripper_moving()):
+               Arms.arms[Side.LEFT].is_gripper_moving()):
             rospy.sleep(GRIPPER_FINISH_SLEEP_INTERVAL)
         rospy.loginfo('\tHands done moving.')
 
         # Verify that both grippers succeeded
         if (not Arms.arms[Side.RIGHT].is_gripper_at_goal() or
-                not Arms.arms[Side.LEFT].is_gripper_at_goal()):
+            not Arms.arms[Side.LEFT].is_gripper_at_goal()):
             rospy.logwarn('\tHand(s) did not fully close or open!')
 
         # Everything completed successfully!
