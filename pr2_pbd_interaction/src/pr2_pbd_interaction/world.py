@@ -42,7 +42,7 @@ COLOR_SURFACE = ColorRGBA(0.8, 0.0, 0.4, 0.4)
 COLOR_TEXT = ColorRGBA(0.0, 0.0, 0.0, 0.5)
 
 # Frames
-BASE_LINK = 'base_link'
+BASE_LINK = 'base_link'  # The robot's base frame
 
 # Time
 MARKER_DURATION = rospy.Duration(2)
@@ -137,7 +137,7 @@ def get_ref_from_name(ref_name):
         int: One of ArmState.*, the number code of the reference
             frame specified by ref_name.
     """
-    if ref_name == 'base_link':
+    if ref_name == BASE_LINK:
         return ArmState.ROBOT_BASE
     else:
         return ArmState.OBJECT
@@ -176,36 +176,51 @@ def get_most_similar_obj(ref_object, ref_frame_list):
     # Regardless, return the "closest object," which may be None.
     return chosen_obj
 
-# ##################################################################
-# Private helper functions
-# ##################################################################
 
-
-def _get_mesh_marker(marker, mesh):
-    """Generates and returns a marker from a mesh.
+def build_landmark_marker(landmark):
+    """Generate and return a marker for world landmarks.
 
     Args:
-        marker (Marker)
-        mesh (Mesh)
+        landmark (WorldLandmark): The landmark to generate a marker for.
 
     Returns:
-        Marker
+        InteractiveMarker
     """
-    marker.type = Marker.TRIANGLE_LIST
-    index = 0
-    marker.scale = Vector3(1.0, 1.0, 1.0)
-    while index + 2 < len(mesh.triangles):
-        if (mesh.triangles[index] < len(mesh.vertices) and
-            mesh.triangles[index + 1] < len(mesh.vertices) and
-            mesh.triangles[index + 2] < len(mesh.vertices)):
-            marker.points.append(mesh.vertices[mesh.triangles[index]])
-            marker.points.append(mesh.vertices[mesh.triangles[index + 1]])
-            marker.points.append(mesh.vertices[mesh.triangles[index + 2]])
-            index += 3
-        else:
-            rospy.logerr('Mesh contains invalid triangle!')
-            break
-    return marker
+    int_marker = InteractiveMarker()
+    int_marker.name = landmark.name()
+    int_marker.header.frame_id = BASE_LINK
+    int_marker.pose = landmark.object.pose
+    int_marker.scale = 1
+
+    button_control = InteractiveMarkerControl()
+    button_control.interaction_mode = InteractiveMarkerControl.BUTTON
+    button_control.always_visible = True
+
+    object_marker = Marker(type=Marker.CUBE,
+                           id=index,
+                           lifetime=MARKER_DURATION,
+                           scale=landmark.object.dimensions,
+                           header=Header(frame_id=BASE_LINK),
+                           color=COLOR_OBJ,
+                           pose=landmark.object.pose)
+
+    button_control.markers.append(object_marker)
+
+    text_pos = Point()
+    text_pos.x = landmark.object.pose.position.x
+    text_pos.y = landmark.object.pose.position.y
+    text_pos.z = (landmark.object.pose.position.z +
+                  landmark.object.dimensions.z / 2 + OFFSET_OBJ_TEXT_Z)
+    button_control.markers.append(
+        Marker(type=Marker.TEXT_VIEW_FACING,
+               id=index,
+               scale=SCALE_TEXT,
+               text=int_marker.name,
+               color=COLOR_TEXT,
+               header=Header(frame_id=BASE_LINK),
+               pose=Pose(text_pos, Quaternion(0, 0, 0, 1))))
+    int_marker.controls.append(button_control)
+    return int_marker
 
 
 def _get_surface_marker(pose, dimensions):
@@ -389,7 +404,7 @@ class World:
                 # Transform from object to robot base.
                 abs_ee_pose = self.transform(arm_frame.ee_pose,
                                              arm_frame.refFrameLandmark.name,
-                                             'base_link')
+                                             BASE_LINK)
                 arm_frame.ee_pose = abs_ee_pose
                 arm_frame.refFrame = ArmState.ROBOT_BASE
                 arm_frame.refFrameLandmark = Landmark()
@@ -399,7 +414,7 @@ class World:
         elif ref_frame == ArmState.OBJECT:
             if arm_frame.refFrame == ArmState.ROBOT_BASE:
                 # Transform from robot base to object.
-                rel_ee_pose = self.transform(arm_frame.ee_pose, 'base_link',
+                rel_ee_pose = self.transform(arm_frame.ee_pose, BASE_LINK,
                                              ref_frame_obj.name)
                 arm_frame.ee_pose = rel_ee_pose
                 arm_frame.refFrame = ArmState.OBJECT
@@ -444,7 +459,7 @@ class World:
         Returns:
             bool
         """
-        return object_name == 'base_link' or self.has_object(object_name)
+        return object_name == BASE_LINK or self.has_object(object_name)
 
     def transform(self, pose, from_frame, to_frame):
         """Transforms a pose between two reference frames. If there is a
@@ -530,15 +545,22 @@ class World:
                     maxX = max(maxX, pt.x)
                     maxY = max(maxY, pt.y)
                     maxZ = max(maxZ, pt.z)
-                self._add_new_object(
+                self._add_bounding_box_landmark(
                     Pose(Point((minX + maxX) / 2, (minY + maxY) / 2,
                                (minZ + maxZ) / 2), Quaternion(0, 0, 0, 1)),
-                    Point(maxX - minX, maxY - minY, maxZ - minZ), False)
+                    Point(maxX - minX, maxY - minY, maxZ - minZ))
             return True
 
         except rospy.ServiceException, e:
             print "Call to segmentation service failed: %s" % e
             return False
+
+    def add_landmark(self, landmark):
+        self._objects.append(landmark)
+        landmark.int_marker = self.build_landmark_marker(landmark)
+        self._im_server.insert(landmark.int_marker, self.marker_feedback_cb)
+        landmark.menu_handler.apply(self._im_server, landmark.int_marker.name)
+        self._im_server.applyChanges()
 
     def clear_all_objects(self):
         """Removes all objects from the world."""
@@ -601,7 +623,7 @@ class World:
             to_remove = None
             for i in range(len(self._objects)):
                 self._publish_tf_pose(self._objects[i].object.pose,
-                                      self._objects[i].get_name(), BASE_LINK)
+                                      self._objects[i].name(), BASE_LINK)
                 if self._objects[i].is_removed:
                     to_remove = i
             if to_remove is not None:
@@ -628,7 +650,7 @@ class World:
         self._objects = []
         self._lock.release()
 
-    def _add_new_object(self, pose, dimensions, is_recognized, mesh=None):
+    def _add_bounding_box_landmark(self, pose, dimensions):
         """Maybe add a new object with the specified properties to our
         object list.
 
@@ -645,47 +667,25 @@ class World:
         Returns:
             bool: Whether the object was actually added.
         """
-        to_remove = None
-        if is_recognized:
-            # TODO(mbforbes): Re-implement object recognition or remove
-            # this dead code.
-            return False
-        else:
-            # Whether whether we already have an object at ~ the same
-            # location (and if so, don't add).
-            for wobj in self._objects:
-                if (pose_distance(wobj.object.pose, pose) <
-                    OBJ_ADD_DIST_THRESHOLD):
-                    rospy.loginfo(
-                        'Previously detected object at the same location, ' +
-                        'will not add this object.')
-                    return False
+        # Whether whether we already have an object at ~ the same
+        # location (and if so, don't add).
+        for wobj in self._objects:
+            if (pose_distance(wobj.object.pose, pose) <
+                OBJ_ADD_DIST_THRESHOLD):
+                rospy.loginfo(
+                    'Previously detected object at the same location, ' +
+                    'will not add this object.')
+                return False
 
-            # Actually add the object.
-            self._add_new_object_internal(pose, dimensions, is_recognized,
-                                          mesh)
-            return True
-
-    def _add_new_object_internal(self, pose, dimensions, is_recognized, mesh):
-        """Does the 'internal' adding of an object with the passed
-        properties. Call _add_new_object to do all pre-requisite checks
-        first (it then calls this function).
-
-        Args:
-            pose (Pose)
-            dimensions (Vector3)
-            is_recognized (bool)
-            mesh (Mesh|None): A mesh, if it exists (can be None).
-        """
-        n_objects = len(self._objects)
-        self._objects.append(WorldLandmark(pose, n_objects, dimensions,
-                                           is_recognized))
-        int_marker = self._get_object_marker(len(self._objects) - 1)
-        self._objects[-1].int_marker = int_marker
-        self._im_server.insert(int_marker, self.marker_feedback_cb)
+        # Actually add the object.
+        name = 'thing {}'.format(len(self._objects))
+        landmark = WorldLandmark.bounding_box(name, pose, dimensions)
+        self._objects.append(landmark)
+        landmark.int_marker = self.build_landmark_marker(landmark)
+        self._im_server.insert(landmark.int_marker, self.marker_feedback_cb)
+        landmark.menu_handler.apply(self._im_server, landmark.int_marker.name)
         self._im_server.applyChanges()
-        self._objects[-1].menu_handler.apply(self._im_server, int_marker.name)
-        self._im_server.applyChanges()
+        return True
 
     def _remove_object(self, to_remove):
         """Remove an object by index.
@@ -705,56 +705,6 @@ class World:
         self._im_server.erase('surface')
         self._im_server.applyChanges()
         self._surface = None
-
-    def _get_object_marker(self, index, mesh=None):
-        """Generate and return a marker for world objects.
-
-        Args:
-            index (int): ID for the new marker.
-            mesh (Mesh, optional):  Mesh to use for the marker. Only
-                utilized if not None. Defaults to None.
-
-        Returns:
-            InteractiveMarker
-        """
-        int_marker = InteractiveMarker()
-        int_marker.name = self._objects[index].get_name()
-        int_marker.header.frame_id = 'base_link'
-        int_marker.pose = self._objects[index].object.pose
-        int_marker.scale = 1
-
-        button_control = InteractiveMarkerControl()
-        button_control.interaction_mode = InteractiveMarkerControl.BUTTON
-        button_control.always_visible = True
-
-        object_marker = Marker(type=Marker.CUBE,
-                               id=index,
-                               lifetime=MARKER_DURATION,
-                               scale=self._objects[index].object.dimensions,
-                               header=Header(frame_id=BASE_LINK),
-                               color=COLOR_OBJ,
-                               pose=self._objects[index].object.pose)
-
-        if mesh is not None:
-            object_marker = _get_mesh_marker(object_marker, mesh)
-        button_control.markers.append(object_marker)
-
-        text_pos = Point()
-        text_pos.x = self._objects[index].object.pose.position.x
-        text_pos.y = self._objects[index].object.pose.position.y
-        text_pos.z = (
-            self._objects[index].object.pose.position.z +
-            self._objects[index].object.dimensions.z / 2 + OFFSET_OBJ_TEXT_Z)
-        button_control.markers.append(
-            Marker(type=Marker.TEXT_VIEW_FACING,
-                   id=index,
-                   scale=SCALE_TEXT,
-                   text=int_marker.name,
-                   color=COLOR_TEXT,
-                   header=Header(frame_id=BASE_LINK),
-                   pose=Pose(text_pos, Quaternion(0, 0, 0, 1))))
-        int_marker.controls.append(button_control)
-        return int_marker
 
     def _publish_tf_pose(self, pose, name, parent):
         """ Publishes a TF for object named name with pose pose and

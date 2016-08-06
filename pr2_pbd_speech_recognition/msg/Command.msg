@@ -16,6 +16,7 @@ string CLOSE_LEFT_HAND = close-left-hand
 
 # General programming
 string RECORD_OBJECT_POSE = record-object-pose
+string RECORD_LANDMARK = record-landmark
 string SAVE_POSE = save-pose
 string EXECUTE_ACTION = execute-action
 string STOP_EXECUTION = stop-execution

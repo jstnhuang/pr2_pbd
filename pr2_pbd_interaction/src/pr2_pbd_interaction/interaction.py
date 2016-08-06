@@ -111,6 +111,7 @@ class Interaction:
             Command.SAVE_POSE: Response(self._save_step, None),
             Command.RECORD_OBJECT_POSE: Response(self._record_object_pose,
                                                  None),
+            Command.RECORD_LANDMARK: Response(self._record_landmark, None),
             Command.START_RECORDING_MOTION: Response(self._start_recording,
                                                      None),
             Command.STOP_RECORDING_MOTION: Response(self._stop_recording, None)
@@ -645,6 +646,11 @@ class Interaction:
             return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
         else:
             return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
+
+    def _record_landmark(self):
+        #resp = self._capture_roi()
+        #self._world.add_landmark(resp.name)
+        return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
 
     def _empty_response(self, responses):
         '''Default response to speech commands; returns what it is
