@@ -65,7 +65,7 @@ class Interaction:
     # TODO(mbforbes): Refactor trajectory busiens into new class.
     # TODO(mbforbes): Document class attributes in docstring.
 
-    def __init__(self, arms, session, world, capture_landmark):
+    def __init__(self, arms, session, world, capture_landmark, find_landmark):
         """Constructs the Interaction object
 
         Args:
@@ -74,6 +74,8 @@ class Interaction:
             world: The World object
             capture_landmark: a ServiceProxy for the
                 object_search_msgs/RecordObject service.
+            find_landmark: a ServiceProxy for the
+                object_search_msgs/Find service.
         """
         # Create main components.
         self._world = world
@@ -81,6 +83,7 @@ class Interaction:
         self.session = session
 
         self._capture_landmark = capture_landmark
+        self._find_landmark = find_landmark
 
         # ROS publishers and subscribers.
         self._viz_publisher = rospy.Publisher('visualization_marker_array',

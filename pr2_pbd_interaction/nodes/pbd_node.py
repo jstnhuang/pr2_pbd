@@ -3,6 +3,7 @@
 
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from object_search_msgs.srv import RecordObject
+from object_search_msgs.srv import Search
 from pr2_pbd_interaction import ActionDatabase
 from pr2_pbd_interaction import Arms
 from pr2_pbd_interaction import ExecuteActionServer
@@ -55,7 +56,9 @@ if __name__ == '__main__':
     # Build interaction
     rospy.wait_for_service('record_object', timeout=5)
     capture_landmark = rospy.ServiceProxy('record_object', RecordObject)
-    interaction = Interaction(arms, session, world, capture_landmark)
+    rospy.wait_for_service('find_object', timeout=5)
+    find_landmark = rospy.ServiceProxy('find_object', Search)
+    interaction = Interaction(arms, session, world, capture_landmark, find_landmark)
 
     execute_server = ExecuteActionServer(interaction)
     rospy.Service('execute_action', ExecuteActionById, execute_server.serve)
