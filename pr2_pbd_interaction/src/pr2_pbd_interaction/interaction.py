@@ -671,8 +671,8 @@ class Interaction:
         pose.position.y = roi.transform.translation.y
         pose.position.z = roi.transform.translation.z
         pose.orientation = roi.transform.rotation
-        landmark = WorldLandmark.cloud_box(resp.name, pose,
-                                           roi.dimensions, resp.db_id)
+        landmark = WorldLandmark.cloud_box(resp.name, pose, roi.dimensions,
+                                           resp.db_id)
         self._world.add_landmark(landmark)
         return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
 
@@ -700,42 +700,37 @@ class Interaction:
             [str, int]: a speech response and a GazeGoal.* constant
         '''
         # We must *have* a current action.
-        if self.session.n_actions() > 0:
-            # We must have also recorded steps (/poses/frames) in it.
-            if self.session.n_frames() > 1:
-                # Save curent action and retrieve it.
-                self.session.save_current_action()
-
-                # Now, see if we can execute.
-                if self.session.get_current_action().is_object_required():
-                    # We need an object; check if we have one.
-                    if self._world.update_object_pose():
-                        self._world.update()
-                        # An object is required, and we got one. Execute.
-                        self.session.get_current_action().update_objects(
-                            self._world.get_frame_list())
-                        self.arms.start_execution(
-                            self.session.get_current_action(),
-                            EXECUTION_Z_OFFSET)
-                    else:
-                        # An object is required, but we didn't get it.
-                        return [RobotSpeech.OBJECT_NOT_DETECTED,
-                                GazeGoal.SHAKE]
-                else:
-                    # No object is required: start execution now.
-                    self.arms.start_execution(
-                        self.session.get_current_action(), EXECUTION_Z_OFFSET)
-
-                # Reply: starting execution.
-                return [RobotSpeech.START_EXECUTION + ' ' +
-                        str(self.session.current_action_id), None]
-            else:
-                # No steps / poses / frames recorded.
-                return [RobotSpeech.EXECUTION_ERROR_NOPOSES + ' ' +
-                        str(self.session.current_action_id), GazeGoal.SHAKE]
-        else:
-            # No actions.
+        if self.session.n_actions <= 0:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
+
+        # We must have also recorded steps (/poses/frames) in it.
+        if self.session.n_frames() <= 1:
+            return [RobotSpeech.EXECUTION_ERROR_NOPOSES + ' ' +
+                    str(self.session.current_action_id), GazeGoal.SHAKE]
+
+        # Save current action and retrieve it.
+        self.session.save_current_action()
+
+        if self.session.get_current_action().is_object_required():
+            # We need an object; check if we have one.
+            if self._world.update_object_pose():
+                self._world.update()
+            else:
+                # An object is required, but we didn't get it.
+                return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
+            # An object is required, and we got one. Execute.
+            self.session.get_current_action().update_objects(
+                self._world.get_frame_list())
+            self.arms.start_execution(self.session.get_current_action(),
+                                      EXECUTION_Z_OFFSET)
+        else:
+            # No object is required: start execution now.
+            self.arms.start_execution(self.session.get_current_action(),
+                                      EXECUTION_Z_OFFSET)
+
+        # Reply: starting execution.
+        return [RobotSpeech.START_EXECUTION + ' ' +
+                str(self.session.current_action_id), None]
 
     # The following are "normal" private helper functions; they aren't
     # called from within a Response, and serve to help the above

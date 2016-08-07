@@ -192,7 +192,8 @@ class Session:
 
     def save_current_action(self):
         '''Saves the current action onto disk.
-        This does not save to the database because actions are automatically saved to the database.
+        This does not save to the database because actions are automatically
+        saved to the database.
         '''
         if self.n_actions() > 0:
             self.actions[self.current_action_id].save(self._data_dir)
