@@ -16,6 +16,8 @@ import signal
 import threading
 
 # ROS builtins
+from geometry_msgs.msg import Pose
+from std_msgs.msg import String
 from visualization_msgs.msg import MarkerArray
 
 # Local
@@ -30,7 +32,7 @@ from pr2_pbd_speech_recognition.msg import Command
 from pr2_social_gaze.msg import GazeGoal
 from response import Response
 from robot_speech import RobotSpeech
-from std_msgs.msg import String
+from world_landmark import WorldLandmark
 
 # ######################################################################
 # Module level constants
@@ -63,11 +65,22 @@ class Interaction:
     # TODO(mbforbes): Refactor trajectory busiens into new class.
     # TODO(mbforbes): Document class attributes in docstring.
 
-    def __init__(self, arms, session, world):
+    def __init__(self, arms, session, world, capture_landmark):
+        """Constructs the Interaction object
+
+        Args:
+            arms: An Arms object
+            session: The Session object
+            world: The World object
+            capture_landmark: a ServiceProxy for the
+                object_search_msgs/RecordObject service.
+        """
         # Create main components.
         self._world = world
         self.arms = arms
         self.session = session
+
+        self._capture_landmark = capture_landmark
 
         # ROS publishers and subscribers.
         self._viz_publisher = rospy.Publisher('visualization_marker_array',
@@ -648,8 +661,16 @@ class Interaction:
             return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
 
     def _record_landmark(self, __=None):
-        #resp = self._capture_roi()
-        #self._world.add_landmark(resp.name)
+        resp = self._capture_landmark(name='')
+        roi = resp.roi
+        pose = Pose()
+        pose.position.x = roi.transform.translation.x
+        pose.position.y = roi.transform.translation.y
+        pose.position.z = roi.transform.translation.z
+        pose.orientation = roi.transform.rotation
+        landmark = WorldLandmark.cloud_box(resp.name, pose,
+                                           roi.dimensions, resp.db_id)
+        self._world.add_landmark(landmark)
         return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
 
     def _empty_response(self, responses):

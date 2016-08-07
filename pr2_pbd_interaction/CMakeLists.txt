@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   message_generation
   mongo_msg_db_msgs
+  object_search_msgs
   pr2_arm_control
   rospy
   rospy_message_converter

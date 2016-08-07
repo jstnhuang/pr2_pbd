@@ -2,6 +2,7 @@
 '''This runs the PbD system (i.e. the backend).'''
 
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
+from object_search_msgs.srv import RecordObject
 from pr2_pbd_interaction import ActionDatabase
 from pr2_pbd_interaction import Arms
 from pr2_pbd_interaction import ExecuteActionServer
@@ -52,7 +53,9 @@ if __name__ == '__main__':
     arms = Arms(tf_listener, world)
 
     # Build interaction
-    interaction = Interaction(arms, session, world)
+    rospy.wait_for_service('record_object', timeout=5)
+    capture_landmark = rospy.ServiceProxy('record_object', RecordObject)
+    interaction = Interaction(arms, session, world, capture_landmark)
 
     execute_server = ExecuteActionServer(interaction)
     rospy.Service('execute_action', ExecuteActionById, execute_server.serve)

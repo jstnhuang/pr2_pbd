@@ -197,7 +197,6 @@ def build_landmark_marker(landmark):
     button_control.always_visible = True
 
     object_marker = Marker(type=Marker.CUBE,
-                           id=index,
                            lifetime=MARKER_DURATION,
                            scale=landmark.object.dimensions,
                            header=Header(frame_id=BASE_LINK),
@@ -213,7 +212,6 @@ def build_landmark_marker(landmark):
                   landmark.object.dimensions.z / 2 + OFFSET_OBJ_TEXT_Z)
     button_control.markers.append(
         Marker(type=Marker.TEXT_VIEW_FACING,
-               id=index,
                scale=SCALE_TEXT,
                text=int_marker.name,
                color=COLOR_TEXT,
@@ -557,7 +555,7 @@ class World:
 
     def add_landmark(self, landmark):
         self._objects.append(landmark)
-        landmark.int_marker = self.build_landmark_marker(landmark)
+        landmark.int_marker = build_landmark_marker(landmark)
         self._im_server.insert(landmark.int_marker, self.marker_feedback_cb)
         landmark.menu_handler.apply(self._im_server, landmark.int_marker.name)
         self._im_server.applyChanges()
@@ -681,7 +679,7 @@ class World:
         name = 'thing {}'.format(len(self._objects))
         landmark = WorldLandmark.bounding_box(name, pose, dimensions)
         self._objects.append(landmark)
-        landmark.int_marker = self.build_landmark_marker(landmark)
+        landmark.int_marker = build_landmark_marker(landmark)
         self._im_server.insert(landmark.int_marker, self.marker_feedback_cb)
         landmark.menu_handler.apply(self._im_server, landmark.int_marker.name)
         self._im_server.applyChanges()

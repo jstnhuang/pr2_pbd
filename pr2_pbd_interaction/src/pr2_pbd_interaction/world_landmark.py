@@ -67,31 +67,31 @@ class WorldLandmark:
 
         Args:
             name (str): The name of this landmark.
-            pose (Pose): The pose of this landmark, in the base frame
+            pose (Pose): The pose of the bounding box center, in the base frame
             dimensions (Vector3): The x, y, and z lengths of the bounding box
         """
         return WorldLandmark(name, pose, dimensions, None)
 
     @staticmethod
-    def cloud_box(name, pose, db_id):
+    def cloud_box(name, pose, dimensions, db_id):
         """Construct a bounding box landmark.
 
         Args:
             name (str): The name of this landmark.
-            pose (Pose): The pose of this landmark, in the base frame
+            pose (Pose): The pose of the bounding box center, in the base frame
             dimensions (Vector3): The x, y, and z lengths of the bounding box
                 around this landmark.
             db_id (str): MongoDB ID of this landmark.
         """
-        return WorldLandmark(name, pose, None, db_id)
+        return WorldLandmark(name, pose, dimensions, db_id)
 
     def is_bounding_box(self):
         """Returns true if this is a bounding box type landmark."""
-        return db_id is None
+        return self._db_id is None
 
     def is_cloud_box(self):
         """Returns true if this is a cloud box type landmark."""
-        return db_id is not None
+        return self._db_id is not None
 
     def name(self):
         """Returns the name of this landmark."""
