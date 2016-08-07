@@ -109,7 +109,7 @@ class Interaction:
             Command.NEXT_ACTION: Response(self._next_action, None),
             Command.PREV_ACTION: Response(self._previous_action, None),
             Command.SAVE_POSE: Response(self._save_step, None),
-            Command.RECORD_OBJECT_POSE: Response(self._record_object_pose,
+            Command.RECORD_OBJECT_POSE: Response(self._record_tabletop_objects,
                                                  None),
             Command.RECORD_LANDMARK: Response(self._record_landmark, None),
             Command.START_RECORDING_MOTION: Response(self._start_recording,
@@ -628,7 +628,7 @@ class Interaction:
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
-    def _record_object_pose(self, __=None):
+    def _record_tabletop_objects(self, __=None):
         '''Makes the robot look for a table and objects.
 
         Only does anything when at least one action has been created.
@@ -647,7 +647,7 @@ class Interaction:
         else:
             return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
 
-    def _record_landmark(self):
+    def _record_landmark(self, __=None):
         #resp = self._capture_roi()
         #self._world.add_landmark(resp.name)
         return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
