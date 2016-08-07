@@ -395,7 +395,7 @@ class Arms:
             arm_index (int): Side.RIGHT or Side.LEFT
         '''
         self.status = ExecutionStatus.EXECUTING
-        solution, has_solution = Arms.solve_ik_for_arm(self_world, arm_index,
+        solution, has_solution = Arms.solve_ik_for_arm(self._world, arm_index,
                                                        arm_state)
         if has_solution:
             # Do the raw movement (this only moves arm_index arm).
