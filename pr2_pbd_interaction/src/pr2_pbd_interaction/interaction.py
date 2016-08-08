@@ -763,7 +763,7 @@ class Interaction:
         if needs_registration:
             # Register landmarks found in the current scene with the
             self.session.get_current_action().update_objects(
-                self._world.get_frame_list(), registered_landmarks)
+                self._world.get_frame_list())
 
         self.arms.start_execution(self.session.get_current_action(),
                                   EXECUTION_Z_OFFSET)

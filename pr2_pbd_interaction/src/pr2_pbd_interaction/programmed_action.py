@@ -272,7 +272,7 @@ class ProgrammedAction:
                     Side.LEFT, self.n_frames() - 1)
         self.lock.release()
 
-    def update_objects(self, object_list, custom_landmarks):
+    def update_objects(self, object_list):
         '''Updates the object list for all of this action's steps.
 
         Args:
