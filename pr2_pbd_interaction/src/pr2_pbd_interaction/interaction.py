@@ -65,7 +65,8 @@ class Interaction:
     # TODO(mbforbes): Refactor trajectory busiens into new class.
     # TODO(mbforbes): Document class attributes in docstring.
 
-    def __init__(self, arms, session, world, capture_landmark, find_landmark):
+    def __init__(self, arms, session, world, capture_landmark,
+                 landmark_finder):
         """Constructs the Interaction object
 
         Args:
@@ -74,8 +75,7 @@ class Interaction:
             world: The World object
             capture_landmark: a ServiceProxy for the
                 object_search_msgs/RecordObject service.
-            find_landmark: a ServiceProxy for the
-                object_search_msgs/Find service.
+            landmark_finder: a CustomLandmarkFinder
         """
         # Create main components.
         self._world = world
@@ -83,7 +83,7 @@ class Interaction:
         self.session = session
 
         self._capture_landmark = capture_landmark
-        self._find_landmark = find_landmark
+        self._custom_landmark_finder = landmark_finder
 
         # ROS publishers and subscribers.
         self._viz_publisher = rospy.Publisher('visualization_marker_array',
@@ -708,25 +708,65 @@ class Interaction:
             return [RobotSpeech.EXECUTION_ERROR_NOPOSES + ' ' +
                     str(self.session.current_action_id), GazeGoal.SHAKE]
 
-        # Save current action and retrieve it.
+        # Save current action to disk (rosbag)
+        # TODO(jstn): Not sure if this works or is necessary anymore.
         self.session.save_current_action()
+        current_action = self.session.get_current_action()
 
-        if self.session.get_current_action().is_object_required():
-            # We need an object; check if we have one.
+        # Check if we need to find tabletop objects in this action.
+        needs_registration = False
+        if current_action.is_object_required():
+            needs_registration = True
+            # Find tabletop objects
             if self._world.update_object_pose():
                 self._world.update()
             else:
                 # An object is required, but we didn't get it.
                 return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
-            # An object is required, and we got one. Execute.
+
+        if len(current_action.custom_landmarks()) > 0:
+            needs_registration = True
+            registered_landmarks = {}  # Maps db_ids to Landmarks
+            for landmark in current_action.custom_landmarks():
+                # Just in case custom_landmarks() returns duplicates
+                if landmark.db_id in registered_landmarks:
+                    continue
+
+                matches = self._custom_landmark_finder.find(landmark.db_id)
+                if matches is None or len(matches) == 0:
+                    return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
+                best_match = None
+                for match in matches:
+                    if best_match is None or match.error < best_match.error:
+                        best_match = match
+                pose = Pose()
+                pose.position = best_match.transform.translation
+                pose.orientation = best_match.transform.rotation
+                registered_landmark = Landmark(type=Landmark.CLOUD_BOX,
+                                               name=landmark.name,
+                                               pose=pose,
+                                               dimensions=landmark.dimensions,
+                                               db_id=landmark.db_id)
+                registered_landmarks[landmark.db_id] = registered_landmark
+            # We must update the world state with the registered landmarks.
+            # If we already looked for tabletop objects, then we should not
+            # clear the world state, as it has already been cleared earlier.
+            should_clear_world = not current_action.is_object_required()
+            if should_clear_world:
+                world._reset_objects()
+            for db_id, landmark in registered_landmarks:
+                world_landmark = WorldLandmark(landmark.name, landmark.pose,
+                                               landmark.dimensions,
+                                               landmark.db_id)
+                world.add_landmark(world_landmark)
+
+        if needs_registration:
+            # Register landmarks found in the current scene with the
             self.session.get_current_action().update_objects(
-                self._world.get_frame_list())
-            self.arms.start_execution(self.session.get_current_action(),
-                                      EXECUTION_Z_OFFSET)
-        else:
-            # No object is required: start execution now.
-            self.arms.start_execution(self.session.get_current_action(),
-                                      EXECUTION_Z_OFFSET)
+                self._world.get_frame_list(), registered_landmarks)
+
+        self.arms.start_execution(self.session.get_current_action(),
+                                  EXECUTION_Z_OFFSET)
 
         # Reply: starting execution.
         return [RobotSpeech.START_EXECUTION + ' ' +

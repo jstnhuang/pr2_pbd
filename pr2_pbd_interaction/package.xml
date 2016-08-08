@@ -43,19 +43,22 @@
   <build_depend>actionlib</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>object_search_msgs</build_depend> <!-- github.com/jstnhuang/rapid -->
+  <build_depend>mongo_msg_db</build_depend> 
   <build_depend>mongo_msg_db_msgs</build_depend> <!-- github.com/jstnhuang/mongo_msg_db_msgs -->
   <build_depend>pr2_arm_control</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>rospy_message_converter</build_depend>
+  <build_depend>static_cloud_db</build_depend> <!-- github.com/jstnhuang/rapid -->
   <run_depend>geometry_msgs</run_depend>
   <run_depend>object_search_msgs</run_depend> <!-- github.com/jstnhuang/rapid -->
   <run_depend>message_runtime</run_depend>
-  <run_depend>mongo_msg_db</run_depend>
-  <run_depend>mongo_msg_db_msgs</run_depend>
+  <run_depend>mongo_msg_db</run_depend> <!-- github.com/jstnhuang/mongo_msg_db -->
+  <run_depend>mongo_msg_db_msgs</run_depend> <!-- github.com/jstnhuang/mongo_msg_db_msgs -->
   <run_depend>pr2_arm_control</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>rospy_message_converter</run_depend>
+  <run_depend>static_cloud_db</run_depend> <!-- github.com/jstnhuang/rapid -->
   <run_depend>std_msgs</run_depend>
   <run_depend>tf</run_depend>
   <!--

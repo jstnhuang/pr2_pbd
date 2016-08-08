@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 '''This runs the PbD system (i.e. the backend).'''
 
+from pymongo import MongoClient
+from mongo_msg_db import MessageDb
+from static_cloud_db import StaticCloudDb
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from object_search_msgs.srv import RecordObject
 from object_search_msgs.srv import Search
@@ -12,6 +15,7 @@ from pr2_pbd_interaction import Session
 from pr2_pbd_interaction import World
 from pr2_pbd_interaction.srv import ExecuteActionById
 from tabletop_object_detector.srv import TabletopSegmentation
+import custom_landmark_finder
 import pr2_pbd_interaction
 import rospy
 import signal
@@ -47,18 +51,26 @@ if __name__ == '__main__':
     world = World(tf_listener, tf_broadcaster, im_server, segment_tabletop)
 
     # Build session
-    db = ActionDatabase.build_real()
-    session = Session(world, world.get_frame_list(), db)
+    action_db = ActionDatabase.build_real()
+    session = Session(world, world.get_frame_list(), action_db)
 
     # Build arms
     arms = Arms(tf_listener, world)
 
     # Build interaction
-    rospy.wait_for_service('record_object', timeout=5)
-    capture_landmark = rospy.ServiceProxy('record_object', RecordObject)
+    # Build the static cloud DB for retrieving custom landmarks.
+    mongo_client = MongoClient()
+    mongo_db = MessageDb(mongo_client)
+    static_cloud_db = StaticCloudDb(mongo_db)
     rospy.wait_for_service('find_object', timeout=5)
     find_landmark = rospy.ServiceProxy('find_object', Search)
-    interaction = Interaction(arms, session, world, capture_landmark, find_landmark)
+    landmark_finder = custom_landmark_finder.CustomLandmarkFinder(
+        static_cloud_db, "pr2_pbd", "objects", find_landmark, tf_listener)
+
+    rospy.wait_for_service('record_object', timeout=5)
+    capture_landmark = rospy.ServiceProxy('record_object', RecordObject)
+    interaction = Interaction(arms, session, world, capture_landmark,
+                              landmark_finder)
 
     execute_server = ExecuteActionServer(interaction)
     rospy.Service('execute_action', ExecuteActionById, execute_server.serve)
