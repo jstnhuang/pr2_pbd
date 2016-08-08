@@ -15,7 +15,7 @@ from pr2_pbd_interaction import Session
 from pr2_pbd_interaction import World
 from pr2_pbd_interaction.srv import ExecuteActionById
 from tabletop_object_detector.srv import TabletopSegmentation
-import custom_landmark_finder
+from custom_landmark_finder import CustomLandmarkFinder
 import pr2_pbd_interaction
 import rospy
 import signal
@@ -64,8 +64,9 @@ if __name__ == '__main__':
     static_cloud_db = StaticCloudDb(mongo_db)
     rospy.wait_for_service('find_object', timeout=5)
     find_landmark = rospy.ServiceProxy('find_object', Search)
-    landmark_finder = custom_landmark_finder.CustomLandmarkFinder(
-        static_cloud_db, "pr2_pbd", "objects", find_landmark, tf_listener)
+    landmark_finder = CustomLandmarkFinder(static_cloud_db, "pr2_pbd",
+                                           "objects", find_landmark,
+                                           tf_listener)
 
     rospy.wait_for_service('record_object', timeout=5)
     capture_landmark = rospy.ServiceProxy('record_object', RecordObject)
