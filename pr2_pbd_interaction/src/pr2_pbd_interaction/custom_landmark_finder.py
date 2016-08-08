@@ -62,10 +62,16 @@ class CustomLandmarkFinder(object):
         scene.parent_frame_id = BASE_FRAME
         try:
             trans, rot = self._tf_listener.lookupTransform(
-                scene.cloud.header.frame_id, BASE_FRAME, rospy.Time(0))
-            scene.base_to_camera.translation = trans
-            scene.base_to_camera.rotation = rot
-        except:
+                scene.cloud.header.frame_id, BASE_FRAME, rospy.Time())
+            scene.base_to_camera.translation.x = trans[0]
+            scene.base_to_camera.translation.y = trans[1]
+            scene.base_to_camera.translation.z = trans[2]
+            scene.base_to_camera.rotation.x = rot[0]
+            scene.base_to_camera.rotation.y = rot[1]
+            scene.base_to_camera.rotation.z = rot[2]
+            scene.base_to_camera.rotation.w = rot[3]
+        except tf.Exception as e:
+            rospy.logerr(e)
             rospy.logerr('Failed to get transform from {} to {}'.format(
                 BASE_FRAME, scene.cloud.header.frame_id))
             return None

@@ -64,7 +64,7 @@ if __name__ == '__main__':
     static_cloud_db = StaticCloudDb(mongo_db)
     rospy.wait_for_service('find_object', timeout=5)
     find_landmark = rospy.ServiceProxy('find_object', Search)
-    landmark_finder = CustomLandmarkFinder(static_cloud_db, "pr2_pbd",
+    landmark_finder = CustomLandmarkFinder(static_cloud_db, "object_search",
                                            "objects", find_landmark,
                                            tf_listener)
 

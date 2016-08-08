@@ -278,7 +278,6 @@ class ProgrammedAction:
         Args:
             object_list ([Landmark]): List of Landmark (as defined by
                 Landmark.msg), the current reference frames.
-            custom_landmarks (str) -> WorldLandmark
         '''
         self.lock.acquire()
         self._update_markers()

@@ -338,6 +338,7 @@ class Arms:
 
                 # If either doesn't have a solution, we return false.
                 if not has_solution_r or not has_solution_l:
+                    rospy.logwarn('No solution for step {}'.format(i+1))
                     return False
 
             # See whether this step is an arm trajectory step.
