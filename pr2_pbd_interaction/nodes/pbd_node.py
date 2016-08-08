@@ -9,13 +9,13 @@ from object_search_msgs.srv import RecordObject
 from object_search_msgs.srv import Search
 from pr2_pbd_interaction import ActionDatabase
 from pr2_pbd_interaction import Arms
+from pr2_pbd_interaction import CustomLandmarkFinder
 from pr2_pbd_interaction import ExecuteActionServer
 from pr2_pbd_interaction import Interaction
 from pr2_pbd_interaction import Session
 from pr2_pbd_interaction import World
 from pr2_pbd_interaction.srv import ExecuteActionById
 from tabletop_object_detector.srv import TabletopSegmentation
-from custom_landmark_finder import CustomLandmarkFinder
 import pr2_pbd_interaction
 import rospy
 import signal
