@@ -586,11 +586,11 @@ class ProgrammedAction:
             if step.type == ActionStep.ARM_TARGET:
                 r_arm_state = step.armTarget.rArm
                 l_arm_state = step.armTarget.lArm
-                if r_arm_state.refFrame == ArmState.OBJECT
+                if r_arm_state.refFrame == ArmState.OBJECT:
                     r_landmark = r_arm_state.refFrameLandmark
                     if r_landmark.type == Landmark.CLOUD_BOX:
                         landmarks[r_landmark.db_id] = r_landmark
-                if l_arm_state.refFrame == ArmState.OBJECT
+                if l_arm_state.refFrame == ArmState.OBJECT:
                     l_landmark = l_arm_state.refFrameLandmark
                     if l_landmark.type == Landmark.CLOUD_BOX:
                         landmarks[l_landmark.db_id] = l_landmark
