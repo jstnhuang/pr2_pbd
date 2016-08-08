@@ -25,6 +25,7 @@ from pr2_arm_control.msg import Side, GripperState
 from pr2_pbd_interaction.msg import Action
 from pr2_pbd_interaction.msg import (ArmState, ActionStepSequence, ActionStep,
                                      ArmTarget, GripperAction, ArmTrajectory)
+from pr2_pbd_interaction.msg import Landmark
 
 # ######################################################################
 # Module level constants
@@ -271,12 +272,13 @@ class ProgrammedAction:
                     Side.LEFT, self.n_frames() - 1)
         self.lock.release()
 
-    def update_objects(self, object_list):
+    def update_objects(self, object_list, custom_landmarks):
         '''Updates the object list for all of this action's steps.
 
         Args:
             object_list ([Landmark]): List of Landmark (as defined by
                 Landmark.msg), the current reference frames.
+            custom_landmarks (str) -> WorldLandmark
         '''
         self.lock.acquire()
         self._update_markers()
@@ -573,6 +575,27 @@ class ProgrammedAction:
                 break
         self.lock.release()
         return is_required
+
+    def custom_landmarks(self):
+        '''Returns a list of custom landmarks referenced this action.
+
+        Returns: [Landmark] A list of landmarks that are cloud landmarks.
+        '''
+        landmarks = {} # Maps db_ids to Landmark
+        for step in self.seq.seq:
+            if step.type == ActionStep.ARM_TARGET:
+                r_arm_state = step.armTarget.rArm
+                l_arm_state = step.armTarget.lArm
+                if r_arm_state.refFrame == ArmState.OBJECT
+                    r_landmark = r_arm_state.refFrameLandmark
+                    if r_landmark.type == Landmark.CLOUD_BOX:
+                        landmarks[r_landmark.db_id] = r_landmark
+                if l_arm_state.refFrame == ArmState.OBJECT
+                    l_landmark = l_arm_state.refFrameLandmark
+                    if l_landmark.type == Landmark.CLOUD_BOX:
+                        landmarks[l_landmark.db_id] = l_landmark
+        return landmarks.values()
+
 
     def get_gripper_states(self, arm_index):
         '''Returns the gripper states for all action steps for arm
