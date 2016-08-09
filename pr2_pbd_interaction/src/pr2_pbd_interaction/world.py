@@ -14,6 +14,7 @@ To transform the arm state to be relative to a landmark:
 More helper functions are available, see source for details.
 """
 
+import copy
 import threading
 import numpy as np
 import rospy
@@ -102,25 +103,23 @@ def convert_ref_frame(arm_state, ref_frame, ref_frame_obj=Landmark()):
     """Transforms an arm frame to a new ref. frame.
 
     Args:
-        arm_state (ArmState)
-        ref_frame (int): One of ArmState.*
-        ref_frame_obj (Landmark): As in Landmark.msg
+        arm_state (ArmState): The arm state to transform
+        ref_frame (int): One of ArmState.*, the desired reference frame to
+            transform into.
+        ref_frame_obj (Landmark): The landmark to transform relative to.
 
     Returns:
         ArmState: A copy of arm_state, but transformed.
     """
-    output_state = ArmState(arm_state.refFrame,
-                            Pose(arm_state.ee_pose.position,
-                                 arm_state.ee_pose.orientation),
-                            arm_state.joint_pose[:],
-                            arm_state.refFrameLandmark)
+    output_state = copy.deepcopy(arm_state)
+    ref_frame_obj_copy = copy.deepcopy(ref_frame_obj)
     if ref_frame == ArmState.ROBOT_BASE:
         if arm_state.refFrame == ArmState.ROBOT_BASE:
             pass  # Nothing to do
         elif arm_state.refFrame == ArmState.OBJECT:
             # Transform from object to robot base.
             ee_in_obj = get_matrix_from_pose(arm_state.ee_pose)
-            obj_pose = arm_state.refFrameLandmark.pose  # In base frame T^B_O
+            obj_pose = arm_state.refFrameLandmark.pose  # In base frame
             obj_to_base = get_matrix_from_pose(obj_pose)
             abs_ee_pose = get_pose_from_transform(
                 np.dot(obj_to_base, ee_in_obj))
@@ -141,7 +140,7 @@ def convert_ref_frame(arm_state, ref_frame, ref_frame_obj=Landmark()):
                 np.dot(base_to_obj, arm_in_base))
             output_state.ee_pose = rel_ee_pose
             output_state.refFrame = ArmState.OBJECT
-            output_state.refFrameLandmark = ref_frame_obj
+            output_state.refFrameLandmark = ref_frame_obj_copy
         elif arm_state.refFrame == ArmState.OBJECT:
             if arm_state.refFrameLandmark.name == ref_frame_obj.name:
                 pass  # Nothing to do
@@ -157,7 +156,7 @@ def convert_ref_frame(arm_state, ref_frame, ref_frame_obj=Landmark()):
                            ee_in_source_obj))
                 output_state.ee_pose = rel_ee_pose
                 output_state.refFrame = ArmState.OBJECT
-                output_state.refFrameLandmark = ref_frame_obj
+                output_state.refFrameLandmark = ref_frame_obj_copy
         else:
             rospy.logerr(
                 'Unhandled reference frame conversion: {} to {}'.format(
@@ -176,7 +175,8 @@ def get_absolute_pose(arm_state):
         Pose
     """
     if arm_state.refFrame == ArmState.OBJECT:
-        transformed_arm_state = convert_ref_frame(arm_state, ArmState.ROBOT_BASE)
+        transformed_arm_state = convert_ref_frame(arm_state,
+                                                  ArmState.ROBOT_BASE)
         return transformed_arm_state.ee_pose
     else:
         return arm_state.ee_pose

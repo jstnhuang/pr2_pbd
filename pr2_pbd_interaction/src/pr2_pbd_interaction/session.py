@@ -394,10 +394,6 @@ class Session:
             index = self._session_actions.index(self.current_action_id)
         except ValueError:
             pass
-        # TODO(jstn): ExperimentState expects i_current_action to be a 1-based
-        # index, which is why we have index+1 below. I think this is just to
-        # make the PbD GUI label actions as "Action1", "Action2", etc. but
-        # that's no excuse to use a 1-based index internally, too.
         return ExperimentState(
             self.n_actions(), index + 1, self.n_frames(), self._selected_step,
             self._get_gripper_states(Side.RIGHT),

@@ -86,6 +86,10 @@ class TestTransforms(unittest.TestCase):
         self.assertAlmostEqual(rel_arm_state.ee_pose.position.x, 0)
         self.assertAlmostEqual(rel_arm_state.ee_pose.position.y, -0.1)
 
+        # Test copy behavior for passed-in landmark
+        rel_arm_state.refFrameLandmark.name = 'modified'
+        self.assertNotEqual(rel_arm_state.refFrameLandmark.name, landmark.name)
+
     def testGetAbsoluteMakesCopy(self):
         arm_state = ArmState()
         arm_state.ee_pose.position.x = 0.05
@@ -104,6 +108,31 @@ class TestTransforms(unittest.TestCase):
         self.assertEqual(pose.position.x, 0.2)
         self.assertEqual(arm_state.refFrame,  ArmState.OBJECT)
         self.assertEqual(arm_state.ee_pose.position.x,  0.05)
+
+    def testDeepCopyBehavior(self):
+        arm_state = ArmState()
+        arm_state.ee_pose.position.x = 0.05
+        arm_state.ee_pose.position.y = 0
+        arm_state.ee_pose.position.z = 0
+        arm_state.ee_pose.orientation.w = 1
+        arm_state.refFrame = ArmState.OBJECT
+        arm_state.refFrameLandmark.name = 'landmark1'
+        arm_state.refFrameLandmark.pose.position.x = 0.15
+        arm_state.refFrameLandmark.pose.position.y = 0
+        arm_state.refFrameLandmark.pose.position.z = 0
+        arm_state.refFrameLandmark.pose.orientation.w = 1
+
+        abs_arm_state = world.convert_ref_frame(arm_state, ArmState.ROBOT_BASE)
+
+        self.assertAlmostEqual(abs_arm_state.ee_pose.position.x, 0.2)
+        self.assertEqual(abs_arm_state.refFrame, ArmState.ROBOT_BASE)
+
+        # Check that the input arg is unchanged
+        self.assertEqual(arm_state.refFrame, ArmState.OBJECT)
+        self.assertEqual(arm_state.ee_pose.position.x, 0.05)
+
+        arm_state.refFrameLandmark.name = 'modified'
+
 
 
 if __name__ == '__main__':
