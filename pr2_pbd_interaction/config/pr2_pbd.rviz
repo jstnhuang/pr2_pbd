@@ -503,7 +503,7 @@ Visualization Manager:
     - Class: rviz/InteractiveMarkers
       Enable Transparency: true
       Enabled: true
-      Name: InteractiveMarkers
+      Name: World objects
       Show Axes: false
       Show Descriptions: true
       Show Visual Aids: false
@@ -541,7 +541,7 @@ Visualization Manager:
     - Class: rviz/InteractiveMarkers
       Enable Transparency: true
       Enabled: true
-      Name: InteractiveMarkers
+      Name: Programmed action
       Show Axes: false
       Show Descriptions: true
       Show Visual Aids: false
@@ -550,7 +550,7 @@ Visualization Manager:
     - Class: rviz/InteractiveMarkers
       Enable Transparency: true
       Enabled: true
-      Name: InteractiveMarkers
+      Name: Arm controllers
       Show Axes: false
       Show Descriptions: true
       Show Visual Aids: false
@@ -627,6 +627,15 @@ Visualization Manager:
       Queue Size: 2
       Transport Hint: compressed
       Value: true
+    - Class: rviz/InteractiveMarkers
+      Enable Transparency: true
+      Enabled: true
+      Name: ROI
+      Show Axes: false
+      Show Descriptions: true
+      Show Visual Aids: false
+      Update Topic: /roi/update
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -686,5 +695,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1311
-  X: 52
+  X: 45
   Y: 49
