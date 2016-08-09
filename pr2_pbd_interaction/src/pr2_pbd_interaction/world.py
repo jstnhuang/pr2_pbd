@@ -39,7 +39,7 @@ OBJ_ADD_DIST_THRESHOLD = 0.02
 
 # How close to 'nearest' object something must be to be counted as
 # 'near' it.
-OBJ_NEAREST_DIST_THRESHOLD = 0.1
+OBJ_NEAREST_DIST_THRESHOLD = 0.3
 
 # Landmark distances below this will be clamped to zero.
 OBJ_DIST_ZERO_CLAMP = 0.0001
