@@ -42,13 +42,11 @@ if __name__ == '__main__':
 
     # Build world object
     tf_listener = tf.TransformListener()
-    tf_broadcaster = tf.TransformBroadcaster()
-    tf_broadcaster = tf.TransformBroadcaster()
     im_server = InteractiveMarkerServer('world_objects')
     rospy.wait_for_service('tabletop_segmentation', timeout=5)
     segment_tabletop = rospy.ServiceProxy('tabletop_segmentation',
                                           TabletopSegmentation)
-    world = World(tf_listener, tf_broadcaster, im_server, segment_tabletop)
+    world = World(tf_listener, im_server, segment_tabletop)
 
     # Build session
     action_db = ActionDatabase.build_real()

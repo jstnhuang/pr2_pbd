@@ -1,4 +1,17 @@
 """Contains the World class as well as geometry-related helper functions.
+
+Helper functions:
+To get the end-effector pose of an arm in the base link:
+    base_pose = get_absolute_pose(arm_state)
+
+To transform an arm frame in general, use convert_ref_frame.
+To transform the arm state to be relative to the base:
+    transformed_arm_state = convert_ref_frame(arm_state, ArmState.ROBOT_BASE)
+
+To transform the arm state to be relative to a landmark:
+    transformed_state = convert_ref_frame(arm_state, ArmState.OBJECT, landmark)
+
+More helper functions are available, see source for details.
 """
 
 import threading
@@ -26,7 +39,7 @@ OBJ_ADD_DIST_THRESHOLD = 0.02
 
 # How close to 'nearest' object something must be to be counted as
 # 'near' it.
-OBJ_NEAREST_DIST_THRESHOLD = 0.1
+OBJ_NEAREST_DIST_THRESHOLD = 0.3
 
 # Landmark distances below this will be clamped to zero.
 OBJ_DIST_ZERO_CLAMP = 0.0001
@@ -83,6 +96,90 @@ def get_matrix_from_pose(pose):
     position = [pp.x, pp.y, pp.z]
     transformation[:3, 3] = position
     return transformation
+
+
+def convert_ref_frame(arm_state, ref_frame, ref_frame_obj=Landmark()):
+    """Transforms an arm frame to a new ref. frame.
+
+    Args:
+        arm_state (ArmState)
+        ref_frame (int): One of ArmState.*
+        ref_frame_obj (Landmark): As in Landmark.msg
+
+    Returns:
+        ArmState: A copy of arm_state, but transformed.
+    """
+    output_state = ArmState(arm_state.refFrame,
+                            Pose(arm_state.ee_pose.position,
+                                 arm_state.ee_pose.orientation),
+                            arm_state.joint_pose[:],
+                            arm_state.refFrameLandmark)
+    if ref_frame == ArmState.ROBOT_BASE:
+        if arm_state.refFrame == ArmState.ROBOT_BASE:
+            pass  # Nothing to do
+        elif arm_state.refFrame == ArmState.OBJECT:
+            # Transform from object to robot base.
+            ee_in_obj = get_matrix_from_pose(arm_state.ee_pose)
+            obj_pose = arm_state.refFrameLandmark.pose  # In base frame T^B_O
+            obj_to_base = get_matrix_from_pose(obj_pose)
+            abs_ee_pose = get_pose_from_transform(
+                np.dot(obj_to_base, ee_in_obj))
+            output_state.ee_pose = abs_ee_pose
+            output_state.refFrame = ArmState.ROBOT_BASE
+            output_state.refFrameLandmark = Landmark()
+        else:
+            rospy.logerr(
+                'Unhandled reference frame conversion: {} to {}'.format(
+                    arm_state.refFrame, ref_frame))
+    elif ref_frame == ArmState.OBJECT:
+        if arm_state.refFrame == ArmState.ROBOT_BASE:
+            # Transform from robot base to provided object.
+            arm_in_base = get_matrix_from_pose(arm_state.ee_pose)
+            base_to_obj = np.linalg.inv(
+                get_matrix_from_pose(ref_frame_obj.pose))
+            rel_ee_pose = get_pose_from_transform(
+                np.dot(base_to_obj, arm_in_base))
+            output_state.ee_pose = rel_ee_pose
+            output_state.refFrame = ArmState.OBJECT
+            output_state.refFrameLandmark = ref_frame_obj
+        elif arm_state.refFrame == ArmState.OBJECT:
+            if arm_state.refFrameLandmark.name == ref_frame_obj.name:
+                pass  # Nothing to do
+            else:
+                # Transform from arm state's object to provided object.
+                ee_in_source_obj = get_matrix_from_pose(arm_state.ee_pose)
+                source_obj_to_base = get_matrix_from_pose(
+                    arm_state.refFrameLandmark.pose)
+                base_to_target_obj = np.linalg.inv(
+                    get_matrix_from_pose(ref_frame_obj.pose))
+                rel_ee_pose = get_pose_from_transform(
+                    np.dot(np.dot(base_to_target_obj, source_obj_to_base),
+                           ee_in_source_obj))
+                output_state.ee_pose = rel_ee_pose
+                output_state.refFrame = ArmState.OBJECT
+                output_state.refFrameLandmark = ref_frame_obj
+        else:
+            rospy.logerr(
+                'Unhandled reference frame conversion: {} to {}'.format(
+                    arm_state.refFrame, ref_frame))
+    return output_state
+
+
+def get_absolute_pose(arm_state):
+    """Returns absolute pose of an end effector state (transforming
+    if relative).
+
+    Args:
+        arm_state (ArmState)
+
+    Returns:
+        Pose
+    """
+    if arm_state.refFrame == ArmState.OBJECT:
+        transformed_arm_state = convert_ref_frame(arm_state, ArmState.ROBOT_BASE)
+        return transformed_arm_state.ee_pose
+    else:
+        return arm_state.ee_pose
 
 
 def pose_distance(pose1, pose2, is_on_table=True):
@@ -268,11 +365,9 @@ def _get_surface_marker(pose, dimensions):
 class World:
     """World maintains the list of landmarks (WorldLandmark) in the scene.
 
-    It also provides helper functions for transforming poses relative to the
-    scene. A third responsibility is that it updates the scene visualization.
+    It also updates the scene visualization.
     Note that landmarks are sometimes called objects or frames.
 
-    FIRST RESPONSIBILITY
     To populate the object list, call:
         world.update_object_pose()
     This causes the robot to look down and segment the tabletop scene.
@@ -300,35 +395,13 @@ class World:
     To find the nearest object within 40 cm to an arm pose (provided in
     the base frame):
         obj = world.get_nearest_object(arm_pose)
-
-    SECOND RESPONSIBILITY
-    As mentioned, this class also has the responsibilities of computing
-    transforms between arm poses and objects.
-
-    To get the end-effector pose of an arm in the base link:
-        base_pose = world.get_absolute_pose(arm_state)
-
-    To transform an arm frame in general, use convert_ref_frame.
-    To transform the arm state to be relative to the base:
-        world.convert_ref_frame(arm_state, ArmState.ROBOT_BASE)
-
-    To transform the arm state to be relative to a landmark:
-        world.convert_ref_frame(arm_state, ArmState.OBJECT, landmark)
-
-    You can also use a transform method directly, which only works for valid
-    frames (according to is_frame_valid):
-        from = 'base_link'
-        to = 'thing 1'
-        world.transform(pose, from, to)
     """
 
-    def __init__(self, tf_listener, tf_broadcaster, im_server,
-                 segment_tabletop):
+    def __init__(self, tf_listener, im_server, segment_tabletop):
         """Construct a World instance.
 
         Args:
             tf_listener: A tf.TransformListener
-            tf_broadcaster: A tf.TransformBroadcaster
             im_server: An InteractiveMarkerServer for visualizing objects.
             segment_tabletop: A rospy.ServiceProxy for the tabletop
                 segmentation service.
@@ -337,31 +410,9 @@ class World:
         self._surface = None
         self._lock = threading.Lock()
         self._tf_listener = tf_listener
-        self._tf_broadcaster = tf_broadcaster
         self._im_server = im_server
         self._segment_tabletop = segment_tabletop
         self.clear_all_objects()
-
-    def get_absolute_pose(self, arm_state):
-        """Returns absolute pose of an end effector state (trasnforming
-        if relative).
-
-        Args:
-            arm_state (ArmState)
-
-        Returns:
-            Pose
-        """
-        if arm_state.refFrame == ArmState.OBJECT:
-            arm_state_copy = ArmState(arm_state.refFrame,
-                                      Pose(arm_state.ee_pose.position,
-                                           arm_state.ee_pose.orientation),
-                                      arm_state.joint_pose[:],
-                                      arm_state.refFrameLandmark)
-            self.convert_ref_frame(arm_state_copy, ArmState.ROBOT_BASE)
-            return arm_state_copy.ee_pose
-        else:
-            return arm_state.ee_pose
 
     def get_frame_list(self):
         """Function that returns the list of reference frames (Landmarks).
@@ -379,62 +430,6 @@ class World:
             bool
         """
         return len(self._objects) > 0
-
-    def convert_ref_frame(self, arm_frame, ref_frame,
-                          ref_frame_obj=Landmark()):
-        """Transforms an arm frame to a new ref. frame.
-
-        Args:
-            arm_frame (ArmState)
-            ref_frame (int): One of ArmState.*
-            ref_frame_obj (Landmark): As in Landmark.msg
-
-        Returns:
-            ArmState: arm_frame (passed in), but modified.
-        """
-        if ref_frame == ArmState.ROBOT_BASE:
-            if arm_frame.refFrame == ArmState.ROBOT_BASE:
-                # Transform from robot base to itself (nothing to do).
-                rospy.logdebug(
-                    'No reference frame transformations needed (both ' +
-                    'absolute).')
-            elif arm_frame.refFrame == ArmState.OBJECT:
-                # Transform from object to robot base.
-                abs_ee_pose = self.transform(arm_frame.ee_pose,
-                                             arm_frame.refFrameLandmark.name,
-                                             BASE_LINK)
-                arm_frame.ee_pose = abs_ee_pose
-                arm_frame.refFrame = ArmState.ROBOT_BASE
-                arm_frame.refFrameLandmark = Landmark()
-            else:
-                rospy.logerr('Unhandled reference frame conversion: ' +
-                             str(arm_frame.refFrame) + ' to ' + str(ref_frame))
-        elif ref_frame == ArmState.OBJECT:
-            if arm_frame.refFrame == ArmState.ROBOT_BASE:
-                # Transform from robot base to object.
-                rel_ee_pose = self.transform(arm_frame.ee_pose, BASE_LINK,
-                                             ref_frame_obj.name)
-                arm_frame.ee_pose = rel_ee_pose
-                arm_frame.refFrame = ArmState.OBJECT
-                arm_frame.refFrameLandmark = ref_frame_obj
-            elif arm_frame.refFrame == ArmState.OBJECT:
-                # Transform between the same object (nothign to do).
-                if arm_frame.refFrameLandmark.name == ref_frame_obj.name:
-                    rospy.logdebug(
-                        'No reference frame transformations needed (same ' +
-                        'object).')
-                else:
-                    # Transform between two different objects.
-                    rel_ee_pose = self.transform(
-                        arm_frame.ee_pose, arm_frame.refFrameLandmark.name,
-                        ref_frame_obj.name)
-                    arm_frame.ee_pose = rel_ee_pose
-                    arm_frame.refFrame = ArmState.OBJECT
-                    arm_frame.refFrameLandmark = ref_frame_obj
-            else:
-                rospy.logerr('Unhandled reference frame conversion: ' +
-                             str(arm_frame.refFrame) + ' to ' + str(ref_frame))
-        return arm_frame
 
     def has_object(self, object_name):
         """Returns whether the world contains an Landmark with object_name.
@@ -458,41 +453,6 @@ class World:
             bool
         """
         return object_name == BASE_LINK or self.has_object(object_name)
-
-    def transform(self, pose, from_frame, to_frame):
-        """Transforms a pose between two reference frames. If there is a
-        TF exception or object does not exist, it will return the pose
-        back without any transforms.
-
-        Args:
-            pose (Pose)
-            from_frame (str)
-            to_frame (str)
-
-        Returns:
-            Pose
-        """
-        if self.is_frame_valid(from_frame) and self.is_frame_valid(to_frame):
-            pose_stamped = PoseStamped()
-            try:
-                common_time = self._tf_listener.getLatestCommonTime(from_frame,
-                                                                    to_frame)
-                pose_stamped.header.stamp = common_time
-                pose_stamped.header.frame_id = from_frame
-                pose_stamped.pose = pose
-                rel_ee_pose = self._tf_listener.transformPose(to_frame,
-                                                              pose_stamped)
-                return rel_ee_pose.pose
-            except tf.Exception:
-                rospy.logerr('TF exception during transform.')
-                return pose
-            except rospy.ServiceException:
-                rospy.logerr('ServiceException during transform.')
-                return pose
-        else:
-            rospy.logdebug('One of the frame objects might not exist: ' +
-                           from_frame + ' or ' + to_frame)
-            return pose
 
     def update_object_pose(self):
         """ Function to externally update an object pose."""
@@ -620,8 +580,6 @@ class World:
         if self.has_objects():
             to_remove = None
             for i in range(len(self._objects)):
-                self._publish_tf_pose(self._objects[i].object.pose,
-                                      self._objects[i].name(), BASE_LINK)
                 if self._objects[i].is_removed:
                     to_remove = i
             if to_remove is not None:
@@ -704,21 +662,52 @@ class World:
         self._im_server.applyChanges()
         self._surface = None
 
-    def _publish_tf_pose(self, pose, name, parent):
-        """ Publishes a TF for object named name with pose pose and
-        parent reference frame parent.
+    def _get_object_marker(self, index, mesh=None):
+        """Generate and return a marker for world objects.
 
         Args:
-            pose (Pose): The object's pose.
-            name (str): The object's name.
-            parent (str): The parent reference frame.
+            index (int): ID for the new marker.
+            mesh (Mesh, optional):  Mesh to use for the marker. Only
+                utilized if not None. Defaults to None.
+
+        Returns:
+            InteractiveMarker
         """
-        if pose is not None:
-            pp = pose.position
-            po = pose.orientation
-            pos = (pp.x, pp.y, pp.z)
-            rot = (po.x, po.y, po.z, po.w)
-            # TODO(mbforbes): Is it necessary to change the position
-            # and orientation into tuples to send to TF?
-            self._tf_broadcaster.sendTransform(pos, rot, rospy.Time.now(),
-                                               name, parent)
+        int_marker = InteractiveMarker()
+        int_marker.name = self._objects[index].get_name()
+        int_marker.header.frame_id = 'base_link'
+        int_marker.pose = self._objects[index].object.pose
+        int_marker.scale = 1
+
+        button_control = InteractiveMarkerControl()
+        button_control.interaction_mode = InteractiveMarkerControl.BUTTON
+        button_control.always_visible = True
+
+        object_marker = Marker(type=Marker.CUBE,
+                               id=index,
+                               lifetime=MARKER_DURATION,
+                               scale=self._objects[index].object.dimensions,
+                               header=Header(frame_id=BASE_LINK),
+                               color=COLOR_OBJ,
+                               pose=self._objects[index].object.pose)
+
+        if mesh is not None:
+            object_marker = _get_mesh_marker(object_marker, mesh)
+        button_control.markers.append(object_marker)
+
+        text_pos = Point()
+        text_pos.x = self._objects[index].object.pose.position.x
+        text_pos.y = self._objects[index].object.pose.position.y
+        text_pos.z = (
+            self._objects[index].object.pose.position.z +
+            self._objects[index].object.dimensions.z / 2 + OFFSET_OBJ_TEXT_Z)
+        button_control.markers.append(
+            Marker(type=Marker.TEXT_VIEW_FACING,
+                   id=index,
+                   scale=SCALE_TEXT,
+                   text=int_marker.name,
+                   color=COLOR_TEXT,
+                   header=Header(frame_id=BASE_LINK),
+                   pose=Pose(text_pos, Quaternion(0, 0, 0, 1))))
+        int_marker.controls.append(button_control)
+        return int_marker
