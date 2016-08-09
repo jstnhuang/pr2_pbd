@@ -732,7 +732,6 @@ class Interaction:
             else:
                 # An object is required, but we didn't get it.
                 return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
-            current_action.update_objects(self._world.get_frame_list())
 
         custom_landmarks = current_action.custom_landmarks()
         rospy.loginfo('Custom landmarks: {}'.format(
@@ -771,6 +770,7 @@ class Interaction:
                                                landmark.dimensions,
                                                landmark.db_id)
                 self._world.add_landmark(world_landmark)
+            current_action.update_objects(self._world.get_frame_list())
 
         self.arms.start_execution(current_action, EXECUTION_Z_OFFSET)
 
