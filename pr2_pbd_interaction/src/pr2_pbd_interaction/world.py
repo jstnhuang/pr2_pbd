@@ -522,8 +522,6 @@ class World:
             dist = pose_distance(wobj.object.pose, arm_pose)
             distances.append(dist)
 
-        rospy.loginfo(distances)
-
         # Then, see if the closest is actually below our threshold for
         # a 'closest object.'
         if len(distances) > 0:

@@ -849,17 +849,6 @@ class Interaction:
         for arm_index in [Side.RIGHT, Side.LEFT]:
             nearest_obj = self._world.get_nearest_object(
                 abs_ee_poses[arm_index])
-            rospy.loginfo(
-                'arm pose: {}'.format(pose_str(abs_ee_poses[arm_index])))
-            if nearest_obj is not None:
-                rospy.loginfo(
-                    'arm pose: {}, nearest obj pose: {}, distance: {}'.format(
-                        pose_str(abs_ee_poses[arm_index]),
-                        pose_str(nearest_obj.pose),
-                        world.pose_distance(abs_ee_poses[arm_index],
-                                            nearest_obj.pose)))
-            else:
-                rospy.loginfo('no nearest object')
             if not self._world.has_objects() or nearest_obj is None:
                 # Arm state is absolute (relative to robot's base_link).
                 states[arm_index] = ArmState(
