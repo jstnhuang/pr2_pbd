@@ -38,7 +38,7 @@ from world import World
 # Module level constants
 # ######################################################################
 
-DEFAULT_OFFSET = 0  # 0.09
+DEFAULT_OFFSET = 0.09
 
 # Marker options
 # --------------
@@ -126,7 +126,7 @@ class ActionStepMarker:
                 selected.
         '''
         if ActionStepMarker._im_server is None:
-            im_server = InteractiveMarkerServer(TOPIC_IM_SERVER)
+            im_server = InteractiveMarkerServer(TOPIC_IM_SERVER, q_size=5)
             ActionStepMarker._im_server = im_server
 
         self._world = world
@@ -263,16 +263,28 @@ class ActionStepMarker:
         ActionStepMarker._im_server.erase(self._get_name())
         ActionStepMarker._im_server.applyChanges()
 
-    def set_new_pose(self, new_pose):
-        '''Changes the pose of the action step to new_pose.
+    def update_pose(self, new_arm_state):
+        '''Changes the pose of the action step to that given by new_arm_state.
+
+        new_arm_state may specify the pose in the base frame or in the frame of
+        a landmark. However, it will be transformed into the frame of this
+        action step.
 
         Args:
             new_pose (Pose)
         '''
         if self.action_step.type == ActionStep.ARM_TARGET:
             t = self.action_step.armTarget
-            arm = t.rArm if self.arm_index == Side.RIGHT else t.lArm
-            arm.ee_pose = ActionStepMarker._offset_pose(new_pose, -1)
+            current_arm_state = t.rArm if self.arm_index == Side.RIGHT else t.lArm
+            updated_arm_state = world.convert_ref_frame(
+                new_arm_state, current_arm_state.refFrame,
+                current_arm_state.refFrameLandmark)
+            # Note that this will be overwritten later when computing IK
+            updated_arm_state.joint_pose = current_arm_state.joint_pose[:]
+            if self.arm_index == Side.RIGHT:
+                t.rArm = updated_arm_state
+            else:
+                t.lArm = updated_arm_state
             self.update_viz()
         elif self.action_step.type == ActionStep.ARM_TRAJECTORY:
             rospy.logwarn('Modification of whole trajectory segments is not ' +
@@ -304,7 +316,7 @@ class ActionStepMarker:
         if self.action_step.type == ActionStep.ARM_TARGET:
             # "Normal" saved pose.
             t = self.action_step.armTarget
-            arm_pose = t.rArm if self.arm_index == Side.RIGHT else t.lArm
+            arm_state = t.rArm if self.arm_index == Side.RIGHT else t.lArm
         elif self.action_step.type == ActionStep.ARM_TRAJECTORY:
             # Trajectory.
             t = self.action_step.armTrajectory
@@ -313,7 +325,7 @@ class ActionStepMarker:
             # implementation. Wouldn't is_start imply you want the first
             # one?
             index = len(arm) - 1 if is_start else 0
-            arm_pose = arm[index]
+            arm_state = arm[index]
 
         # TODO(mbforbes): Figure out if there are cases that require
         # this, or remove.
@@ -321,8 +333,8 @@ class ActionStepMarker:
         #     self._world.has_object(arm_pose.refFrameLandmark.name)):
         #     return ActionStepMarker._offset_pose(arm_pose.ee_pose)
         # else:
-        world_pose = world.get_absolute_pose(arm_pose)
-        return ActionStepMarker._offset_pose(world_pose)
+        world_pose = world.get_absolute_pose(arm_state)
+        return world_pose
 
     def get_pose(self):
         '''Returns the pose of the action step.
@@ -332,7 +344,7 @@ class ActionStepMarker:
         '''
         target = self.get_target()
         if target is not None:
-            return ActionStepMarker._offset_pose(target.ee_pose)
+            return target.ee_pose
 
     def set_target(self, target):
         '''Sets the new ArmState for this action step.
@@ -411,7 +423,14 @@ class ActionStepMarker:
             feedback (InteractiveMarkerFeedback)
         '''
         if feedback.event_type == InteractiveMarkerFeedback.POSE_UPDATE:
-            self.set_new_pose(feedback.pose)
+            # The interactive marker is shifted forward from the actual
+            # end-effector pose, so when setting the new pose, we need to shift
+            # back from where the marker is.
+            feedback_arm_state = ArmState()
+            feedback_arm_state.ee_pose = ActionStepMarker._offset_pose(
+                feedback.pose, -1)
+            feedback_arm_state.refFrame = ArmState.ROBOT_BASE
+            self.update_pose(feedback_arm_state)
             self.update_viz()
         elif feedback.event_type == InteractiveMarkerFeedback.BUTTON_CLICK:
             # Set the visibility of the 6DOF controller.
@@ -711,21 +730,26 @@ class ActionStepMarker:
 
         # Add an arrow to the relative object, if there is one.
         base_pose = world.get_absolute_pose(self.get_target())
+        # base_pose refers to the wrist link, which looks weird in
+        # visualizations, so offset_pose is shifted forward to be in the
+        # "middle" of the gripper
+        offset_pose = ActionStepMarker._offset_pose(base_pose, 1)
         ref_frame = world.get_ref_from_name(self._get_ref_name())
         if ref_frame == ArmState.OBJECT:
-            menu_control.markers.append(Marker(
-                type=Marker.ARROW,
-                id=(ID_OFFSET_REF_ARROW + self.get_uid()),
-                scale=SCALE_OBJ_REF_ARROW,
-                header=Header(frame_id=BASE_LINK),
-                color=COLOR_OBJ_REF_ARROW,
-                points=[base_pose.position, self.get_target().refFrameLandmark.pose.position]))
+            menu_control.markers.append(
+                Marker(type=Marker.ARROW,
+                       id=(ID_OFFSET_REF_ARROW + self.get_uid()),
+                       scale=SCALE_OBJ_REF_ARROW,
+                       header=Header(frame_id=BASE_LINK),
+                       color=COLOR_OBJ_REF_ARROW,
+                       points=[offset_pose.position, self.get_target(
+                       ).refFrameLandmark.pose.position]))
 
         # Make and add the text for this step ('Step X').
         text_pos = Point()
-        text_pos.x = base_pose.position.x
-        text_pos.y = base_pose.position.y
-        text_pos.z = base_pose.position.z + TEXT_Z_OFFSET
+        text_pos.x = offset_pose.position.x
+        text_pos.y = offset_pose.position.y
+        text_pos.z = offset_pose.position.z + TEXT_Z_OFFSET
         menu_control.markers.append(
             Marker(type=Marker.TEXT_VIEW_FACING,
                    id=self.get_uid(),
@@ -739,7 +763,7 @@ class ActionStepMarker:
         int_marker = InteractiveMarker()
         int_marker.name = self._get_name()
         int_marker.header.frame_id = BASE_LINK
-        int_marker.pose = base_pose
+        int_marker.pose = offset_pose
         int_marker.scale = INT_MARKER_SCALE
         self._add_6dof_marker(int_marker, True)
         int_marker.controls.append(menu_control)
