@@ -31,6 +31,8 @@ from pr2_social_gaze.msg import GazeGoal
 from response import Response
 from robot_speech import RobotSpeech
 from std_msgs.msg import String
+from world_landmark import WorldLandmark
+import world
 
 # ######################################################################
 # Module level constants
@@ -45,6 +47,11 @@ DEFAULT_VELOCITY = 0.2
 # ######################################################################
 # Classes
 # ######################################################################
+
+
+def pose_str(pose):
+    return 'x: {}, y: {}, z: {}'.format(pose.position.x, pose.position.y,
+                                        pose.position.z)
 
 
 class Interaction:
@@ -758,12 +765,12 @@ class Interaction:
         # Next, alter all trajectory steps (ArmState's) so that they use
         # the dominant reference frame as their reference frame.
         for i in range(len(self._arm_trajectory.timing)):
-            t.rArm[i] = self._world.convert_ref_frame(
+            t.rArm[i] = world.convert_ref_frame(
                 self._arm_trajectory.rArm[i],  # arm_frame (ArmState)
                 r_ref_n,  # ref_frame (int)
                 r_ref_obj  # ref_frame_obj (Objet)
             )
-            t.lArm[i] = self._world.convert_ref_frame(
+            t.lArm[i] = world.convert_ref_frame(
                 self._arm_trajectory.lArm[i],  # arm_frame (ArmState)
                 l_ref_n,  # ref_frame (int)
                 l_ref_obj  # ref_frame_obj (Objet)
@@ -852,11 +859,13 @@ class Interaction:
                 )
             else:
                 # Arm state is relative (to some object in the world).
-                rel_ee_poses[arm_index] = self._world.transform(
-                    abs_ee_poses[arm_index],  # pose (Pose)
-                    BASE_LINK,  # from_frame (str)
-                    nearest_obj.name  # to_frame (str)
-                )
+                arm_frame = ArmState()
+                arm_frame.ee_pose = abs_ee_poses[arm_index]
+                arm_frame.refFrame = ArmState.ROBOT_BASE
+                rel_arm_frame = world.convert_ref_frame(arm_frame,
+                                                        ArmState.OBJECT,
+                                                        nearest_obj)
+                rel_ee_poses[arm_index] = rel_arm_frame.ee_pose
                 states[arm_index] = ArmState(
                     ArmState.OBJECT,  # refFrame (uint8)
                     rel_ee_poses[arm_index],  # ee_pose (Pose)

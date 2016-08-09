@@ -62,6 +62,10 @@ script:
     - catkin build pr2_pbd_speech_recognition
     - catkin build pr2_social_gaze
     - catkin build tabletop_object_detector
+    - source ~/catkin_ws/devel/setup.bash --extend
+    # TODO(jstn): Separate out transform functionality from world module so this can be tested without installing a bunch of other stuff
+    #- cd ~/catkin_ws/src/pr2_pbd/pr2_pbd_interaction/test
+    #- python world_test.py
 # Real tests: crash because of Gazebo bugs
 #    - roslaunch pr2_pbd_interaction simulated_robot.launch gui:=false
 # Debug: trying to just run gazebo's table object launch (Gazebo bugs)

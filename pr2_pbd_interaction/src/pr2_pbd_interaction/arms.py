@@ -22,6 +22,7 @@ from pr2_arm_control.msg import ArmMode, GripperState, Side
 from pr2_pbd_interaction.msg import ArmState, ActionStep, ExecutionStatus
 from pr2_social_gaze.msg import GazeGoal
 from response import Response
+import world
 
 # ######################################################################
 # Module level constants
@@ -123,7 +124,7 @@ class Arms:
             return True
 
     @staticmethod
-    def solve_ik_for_arm(world, arm_index, arm_state, z_offset=0.0):
+    def solve_ik_for_arm(arm_index, arm_state, z_offset=0.0):
         '''Finds an  IK solution for a particular arm pose.
 
         Args:
@@ -154,9 +155,9 @@ class Arms:
         if arm_state.refFrame == ArmState.OBJECT:
             # Arm is relative.
             solution = ArmState()
-            target_pose = world.transform(arm_state.ee_pose,
-                                          arm_state.refFrameLandmark.name,
-                                          'base_link')
+            target_pose_state = world.convert_ref_frame(arm_state,
+                                                        ArmState.ROBOT_BASE)
+            target_pose = target_pose_state.ee_pose
             target_pose.position.z = target_pose.position.z + z_offset
 
             # Try solving IK.
@@ -328,11 +329,11 @@ class Arms:
             if self.action.seq.seq[i].type == ActionStep.ARM_TARGET:
                 # Solve IK for both arms.
                 r_arm, has_solution_r = Arms.solve_ik_for_arm(
-                    self._world, Side.RIGHT,
-                    self.action.seq.seq[i].armTarget.rArm, self.z_offset)
+                    Side.RIGHT, self.action.seq.seq[i].armTarget.rArm,
+                    self.z_offset)
                 l_arm, has_solution_l = Arms.solve_ik_for_arm(
-                    self._world, Side.LEFT,
-                    self.action.seq.seq[i].armTarget.lArm, self.z_offset)
+                    Side.LEFT, self.action.seq.seq[i].armTarget.lArm,
+                    self.z_offset)
                 self.action.seq.seq[i].armTarget.rArm = r_arm
                 self.action.seq.seq[i].armTarget.lArm = l_arm
 
@@ -348,11 +349,11 @@ class Arms:
                 for j in range(n_frames):
                     # Solve IK for both arms.
                     r_arm, has_solution_r = Arms.solve_ik_for_arm(
-                        self._world, Side.RIGHT,
+                        Side.RIGHT,
                         self.action.seq.seq[i].armTrajectory.rArm[j],
                         self.z_offset)
                     l_arm, has_solution_l = Arms.solve_ik_for_arm(
-                        self._world, Side.LEFT,
+                        Side.LEFT,
                         self.action.seq.seq[i].armTrajectory.lArm[j],
                         self.z_offset)
                     self.action.seq.seq[i].armTrajectory.rArm[j] = r_arm
@@ -395,8 +396,7 @@ class Arms:
             arm_index (int): Side.RIGHT or Side.LEFT
         '''
         self.status = ExecutionStatus.EXECUTING
-        solution, has_solution = Arms.solve_ik_for_arm(self._world, arm_index,
-                                                       arm_state)
+        solution, has_solution = Arms.solve_ik_for_arm(arm_index, arm_state)
         if has_solution:
             # Do the raw movement (this only moves arm_index arm).
             if arm_index == Side.RIGHT:
