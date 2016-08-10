@@ -92,13 +92,15 @@ class World:
 
     side_markers = []
 
-    master_markers = []
+    #master_markers = []
 
     def __init__(self):
         # Public attributes
         if World.tf_listener is None:
             World.tf_listener = TransformListener()
         self.surface = None
+	World.side_refs = []
+	World.side_markers = []
 
         # Private attributes
         self._lock = threading.Lock()
@@ -340,8 +342,7 @@ class World:
 
     @staticmethod
     def is_frame_valid(object_name):
-        '''Returns whether the frame (object) name is valid for
-        transforms.
+        '''Returns whether the frame (object) name is valid for transforms.
         Args:
             object_name (str)
         Returns:
@@ -582,7 +583,7 @@ class World:
 
     @staticmethod
     def get_tf_pose(tf_name, ref_frame='base_link'):
-        ''' Returns end effector pose for the arm'''
+        ''' Returns end effector pose for the arm.'''
         try:
             time = World.tf_listener.getLatestCommonTime(ref_frame,
                                                          tf_name)
@@ -638,10 +639,10 @@ class World:
             rospy.loginfo('Number of objects ' + str(len(World.objects)))
 
 	    object_name = feedback.marker_name
-	    for int_marker in World.master_markers:
+	    '''for int_marker in World.master_markers:
 		if int_marker.name == object_name:
 		    master = int_marker
-		    break
+		    break'''
 
 	    World.selected_obj_side = feedback
         else:
@@ -712,22 +713,39 @@ class World:
 	ref.dimensions.z = parent.scale.z
 	return ref
 
-    def test_existing(self, subject):
+    def test_existing(self, loc, subject, subject_cont, subject_ref):
 	'''Tests whether it is necessary to create another marker or simply replace an existing one.
 
 	Args:
 	    subject (Marker)
+	    subject_cont (InteractiveMarkerController)
+	    subject_ref (Landmark)
 	'''
-	new_ref = True
-	for marker in World.side_markers:
-	    if marker.ns == subject.ns:
-		new_ref = False
-		index = World.side_markers.index(marker)
-		World.side_markers[index] = subject
-	if new_ref == True:
-	    World.side_markers += [subject]
+	#create_new = True
+	#replace_id = None
+	rospy.loginfo("Loc: " + str(loc))
+	rospy.loginfo("(Before) len World.side_markers: " + str(len(World.side_markers)))
+	rospy.loginfo("(Before) len self._marker_controllers: " + str(len(self._marker_controllers)))
+	rospy.loginfo("(Before) len World.side_refs: " + str(len(World.side_refs)))
+	if loc >= len(World.side_markers) or (loc == 0 and len(World.side_markers) == 0):
+	    #create_new = True
+	    rospy.loginfo("Creating new side")
+	    World.side_markers.append(subject)
+	    rospy.loginfo("len World.side_markers: " + str(len(World.side_markers)))
+	    self._marker_controllers.append(subject_cont)
+	    rospy.loginfo("len self._marker_controllers: " + str(len(self._marker_controllers)))
+	    World.side_refs.append(subject_ref)
+	    rospy.loginfo("len World.side_refs: " + str(len(World.side_refs)))
+	elif (loc < len(World.side_markers) and (len(World.side_markers) != 0)):
+	    #create_new = False
+	    rospy.loginfo("Sides have been created already, replacing...")
+	    if World.side_markers[loc].ns == subject.ns:
+		#rospy.loginfo("Create_new: " + str(create_new))
+		World.side_markers[loc] = subject
+		self._marker_controllers[loc] = subject_cont
+		World.side_refs[loc] = subject_ref
 	else:
-	    pass
+	    rospy.loginfo("Test_existing isn't working")
 
     def create_sides(self, obj):
 	'''Combines the functions above to create all sides of an object.
@@ -735,7 +753,7 @@ class World:
 	Args:
 	    obj (int) The number of the object.
 	'''
-	new_ref = True
+	#rospy.loginfo("world.objects: " + str(World.objects.object))
 	o_s = self._obj_sides[obj]
 	front = self.make_mark(World.objects[obj].get_name())
 	front.id = int(obj) * 10 + 0
@@ -745,11 +763,9 @@ class World:
 	front.scale.z = World.objects[obj].object.dimensions.z
 	front.ns = "Obj #" + str(obj) + " X-Minimum"
 	front_ref = self.make_ref(front)
-	self.test_existing(front)
 	front_cont = self.make_cont(front)
 	front_cont.markers.append(front)
-	self._marker_controllers += [front_cont]
-	World.side_refs += [front_ref]
+	self.test_existing(obj*6, front, front_cont, front_ref)
 
 	back = self.make_mark(World.objects[obj].get_name())
 	back.id = int(obj) * 10 + 1
@@ -759,11 +775,9 @@ class World:
 	back.scale.z = World.objects[obj].object.dimensions.z
 	back.ns = "Obj #" + str(obj) + " X-Maximum"
 	back_ref = self.make_ref(back)
-	self.test_existing(back)
 	back_cont = self.make_cont(back)
 	back_cont.markers.append(back)
-	self._marker_controllers += [back_cont]
-	World.side_refs += [back_ref]
+	self.test_existing(obj*6+1, back, back_cont, back_ref)
 	
 	right = self.make_mark(World.objects[obj].get_name())
 	right.id = int(obj) * 10 + 2
@@ -773,11 +787,9 @@ class World:
 	right.scale.z = World.objects[obj].object.dimensions.z
 	right.ns = "Obj #" + str(obj) + " Y-Minimum"
 	right_ref = self.make_ref(right)
-	self.test_existing(right)
 	right_cont = self.make_cont(right)
 	right_cont.markers.append(right)
-	self._marker_controllers += [right_cont]
-	World.side_refs += [right_ref]
+	self.test_existing(obj*6+2, right, right_cont, right_ref)
 
 	left = self.make_mark(World.objects[obj].get_name())
 	left.id = int(obj) * 10 + 3
@@ -787,11 +799,9 @@ class World:
 	left.scale.z = World.objects[obj].object.dimensions.z
 	left.ns = "Obj #" + str(obj) + " Y-Maximum"
 	left_ref = self.make_ref(left)
-	self.test_existing(left)
 	left_cont = self.make_cont(left)
 	left_cont.markers.append(left)
-	self._marker_controllers += [left_cont]
-	World.side_refs += [left_ref]
+	self.test_existing(obj*6+3, left, left_cont, left_ref)
 
 	base = self.make_mark(World.objects[obj].get_name())
 	base.id = int(obj) * 10 + 4
@@ -801,11 +811,9 @@ class World:
 	base.scale.z = 0.02
 	base.ns = "Obj #" + str(obj) + " Z-Minimum"
 	base_ref = self.make_ref(base)
-	self.test_existing(base)
 	base_cont = self.make_cont(base)
 	base_cont.markers.append(base)
-	self._marker_controllers += [base_cont]
-	World.side_refs += [base_ref]
+	self.test_existing(obj*6+4, base, base_cont, base_ref)
 
 	top = self.make_mark(World.objects[obj].get_name())
 	top.id = int(obj) * 10 + 5
@@ -815,11 +823,9 @@ class World:
 	top.scale.z = 0.02
 	top.ns = "Obj #" + str(obj) + " Z-Maximum"
 	top_ref = self.make_ref(top)
-	self.test_existing(top)
 	top_cont = self.make_cont(top)
 	top_cont.markers.append(top)
-	self._marker_controllers += [top_cont]
-	World.side_refs += [top_ref]
+	self.test_existing(obj*6+5, top, top_cont, top_ref)
 
     def update(self):
         '''Update function called in a loop.
@@ -840,20 +846,25 @@ class World:
 	    default_pose.orientation.z = 0
 	    default_pose.orientation.w = 1
             to_remove = None
+	    #rospy.loginfo("len(World.objects): " + str(len(World.objects)))
             for i in range(len(World.objects)):
+		#rospy.loginfo(str(World.objects[i].object))
+		obj_name = World.objects[i].get_name()
                 self._publish_tf_pose(
                     World.objects[i].object.pose,
-                    World.objects[i].get_name(),
+                    obj_name,
                     BASE_LINK
                 )
-                if World.objects[i].is_removed:
-                    to_remove = i
-		for j in range(i * 6, (i * 6) + 6):
+		#rospy.loginfo("len(World.side_refs): " + str(len(World.side_refs)))
+		for j in range((i * 6), (i * 6) + 6):
+		    #rospy.loginfo("World.side_refs[" + str(j) + "] = " + str(World.side_refs[j]))
 		    self._publish_tf_pose(
 			World.side_refs[j].pose,
 			World.side_refs[j].name,
-			World.objects[i].get_name()
+			obj_name
 		    )
+		if World.objects[i].is_removed:
+                    to_remove = i
             if to_remove is not None:
                 self._remove_object(to_remove)
                 is_world_changed = True
@@ -867,6 +878,7 @@ class World:
 
     def _reset_objects(self):
         '''Removes all objects.'''
+	rospy.loginfo("Reset_objects was called")
         self._lock.acquire()
         for wobj in World.objects:
             self._im_server.erase(wobj.int_marker.name)
@@ -876,7 +888,6 @@ class World:
         self._im_server.clear()
         self._im_server.applyChanges()
         World.objects = []
-	World.master_markers = []
         self._lock.release()
 
     def _add_new_object(self, pose, dimensions, is_recognized, mesh=None):
@@ -925,7 +936,7 @@ class World:
             #     pose, dimensions, is_recognized, mesh)
             # return True
         else:
-            # Whether whether we already have an object at ~ the same
+            # Whether we already have an object at ~ the same
             # location (and if so, don't add).
             for wobj in World.objects:
                 if (World.pose_distance(wobj.object.pose, pose)
@@ -1030,7 +1041,9 @@ class World:
             object_marker = World._get_mesh_marker(object_marker, mesh)
 	    button_control.markers.append(object_marker)
 	else:
-	    for item in range(len(self._marker_controllers)-(6 * ((len(World.objects)) - (index))), (len(self._marker_controllers) - 6 * ((len(World.objects)) - (index + 1)))):
+	    #rospy.loginfo("Len self._marker_controllers: " + str(len(self._marker_controllers)))
+	    #rospy.loginfo("Index: " + str(index))
+	    for item in range((6 * (index)), (6 * (index)) + 6):
 		int_marker.controls.append(self._marker_controllers[item])
 
         text_pos = Point()
@@ -1051,7 +1064,6 @@ class World:
             )
         )
         int_marker.controls.append(button_control)
-	World.master_markers += [int_marker]
         return int_marker
 
     def _publish_tf_pose(self, pose, name, parent):
