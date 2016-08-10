@@ -700,7 +700,7 @@ class Interaction:
         return [RobotSpeech.STEP_RECORDED, GazeGoal.FREEZE]
 
     def _relax_head(self, __=None):
-        '''Freezes the head.
+        '''Relaxes the head after being frozen.
 
         Args:
             __: Unused
