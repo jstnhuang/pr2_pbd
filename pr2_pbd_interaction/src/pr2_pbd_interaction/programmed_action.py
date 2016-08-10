@@ -254,10 +254,12 @@ class ProgrammedAction:
             # NOTE(mbforbes): One of many instances of code duplication
             # b/c of right/left...
             last_step = self.seq.seq[-1]
-            r_marker = ActionStepMarker(self._world, self.n_frames(), Side.RIGHT, last_step,
+            r_marker = ActionStepMarker(self._world, self.n_frames(),
+                                        Side.RIGHT, last_step,
                                         self.marker_click_cb)
             r_marker.update_ref_frames(object_list)
-            l_marker = ActionStepMarker(self._world, self.n_frames(), Side.LEFT, last_step,
+            l_marker = ActionStepMarker(self._world, self.n_frames(),
+                                        Side.LEFT, last_step,
                                         self.marker_click_cb)
             l_marker.update_ref_frames(object_list)
             self.r_markers.append(r_marker)
@@ -501,15 +503,13 @@ class ProgrammedAction:
                 step.type == ActionStep.ARM_TRAJECTORY):
                 # Construct the markers.
                 r_marker = ActionStepMarker(
-                    self._world,
-                    i + 1,  # step_number
+                    self._world, i + 1,  # step_number
                     Side.RIGHT,  # arm_index
                     step,  # action_step
                     self.marker_click_cb  # marker_click_cb
                 )
                 l_marker = ActionStepMarker(
-                    self._world,
-                    i + 1,  # step_number
+                    self._world, i + 1,  # step_number
                     Side.LEFT,  # arm_index
                     step,  # action_step
                     self.marker_click_cb  # marker_click_cb
@@ -547,9 +547,11 @@ class ProgrammedAction:
         self._delete_step(len(self.seq.seq) - 1)
         self.lock.release()
 
-    def is_object_required(self):
+    def is_tabletop_object_required(self):
         '''Returns whether this action has any steps that are relative
         to objects in the world (instead of absolute).
+
+        Only applies to tabletop objects, not custom landmarks.
 
         Returns:
             bool
@@ -562,14 +564,20 @@ class ProgrammedAction:
             if tp == ActionStep.ARM_TARGET:
                 r_ref = step.armTarget.rArm.refFrame
                 l_ref = step.armTarget.lArm.refFrame
-            else:
-                # tp == ActionStep.ARM_TRAJECTORY
+                r_landmark = step.armTarget.rArm.refFrameLandmark
+                l_landmark = step.armTarget.lArm.refFrameLandmark
+            elif tp == ActionStep.ARM_TRAJECTORY:
                 r_ref = step.armTrajectory.rRefFrame
                 l_ref = step.armTrajectory.lRefFrame
+                r_landmark = step.armTrajectory.rRefFrameLandmark
+                l_landmark = step.armTrajectory.lRefFrameLandmark
 
             # Logic: If either reference frame is to an object, we
             # return true.
-            if r_ref == ArmState.OBJECT or l_ref == ArmState.OBJECT:
+            if r_ref == ArmState.OBJECT and r_landmark.type == Landmark.TABLE_TOP:
+                is_required = True
+                break
+            if l_ref == ArmState.OBJECT and l_landmark.type == Landmark.TABLE_TOP:
                 is_required = True
                 break
         self.lock.release()
@@ -580,7 +588,7 @@ class ProgrammedAction:
 
         Returns: [Landmark] A list of landmarks that are cloud landmarks.
         '''
-        landmarks = {} # Maps db_ids to Landmark
+        landmarks = {}  # Maps db_ids to Landmark
         for step in self.seq.seq:
             if step.type == ActionStep.ARM_TARGET:
                 r_arm_state = step.armTarget.rArm
@@ -594,7 +602,6 @@ class ProgrammedAction:
                     if l_landmark.type == Landmark.CLOUD_BOX:
                         landmarks[l_landmark.db_id] = l_landmark
         return landmarks.values()
-
 
     def get_gripper_states(self, arm_index):
         '''Returns the gripper states for all action steps for arm
@@ -663,7 +670,8 @@ class ProgrammedAction:
         Returns:
             ProgrammedAction
         '''
-        action = ProgrammedAction(self._world, self.action_index, self.step_click_cb)
+        action = ProgrammedAction(self._world, self.action_index,
+                                  self.step_click_cb)
         action.seq = ActionStepSequence()
         for action_step in self.seq.seq:
             copy = ProgrammedAction._copy_action_step(action_step)

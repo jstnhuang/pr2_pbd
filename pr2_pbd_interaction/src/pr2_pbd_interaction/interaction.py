@@ -137,7 +137,8 @@ class Interaction:
             Command.RECORD_LANDMARK: Response(self._record_landmark, None),
             Command.START_RECORDING_MOTION: Response(self._start_recording,
                                                      None),
-            Command.STOP_RECORDING_MOTION: Response(self._stop_recording, None),
+            Command.STOP_RECORDING_MOTION: Response(self._stop_recording,
+                                                    None),
             Command.FREEZE_HEAD: Response(self._freeze_head, None),
             Command.RELAX_HEAD: Response(self._relax_head, None),
         }
@@ -684,7 +685,8 @@ class Interaction:
         pose.orientation = roi.transform.rotation
         landmark = WorldLandmark.cloud_box(resp.name, pose, roi.dimensions,
                                            resp.db_id)
-        rospy.loginfo('Adding landmark {}, ID: {}'.format(resp.name, resp.db_id))
+        rospy.loginfo('Adding landmark {}, ID: {}'.format(resp.name,
+                                                          resp.db_id))
         self._world.add_landmark(landmark)
         # The user should have frozen the head before recording a custom
         # landmark. Even if they didn't, relaxing the head shouldn't have
@@ -752,7 +754,7 @@ class Interaction:
         rospy.loginfo('Executing action {}'.format(current_action.name))
 
         # Check if we need to find tabletop objects in this action.
-        if current_action.is_object_required():
+        if current_action.is_tabletop_object_required():
             # Find tabletop objects
             if self._world.update_object_pose():
                 self._world.update()
@@ -774,12 +776,15 @@ class Interaction:
                 # demonstration time -- we assume that it is roughly in the
                 # same location at run time.
                 Response.force_look_at_point(landmark.pose)
-                rospy.loginfo('Searching for landmark: {}, ID: {}'.format(landmark.name, landmark.db_id))
+                rospy.loginfo('Searching for landmark: {}, ID: {}'.format(
+                    landmark.name, landmark.db_id))
                 matches = self._custom_landmark_finder.find(landmark.db_id)
                 if matches is None or len(matches) == 0:
-                    rospy.logwarn('Could not find landmark: {}'.format(landmark.name))
+                    rospy.logwarn(
+                        'Could not find landmark: {}'.format(landmark.name))
                     return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
-                rospy.logwarn('Picking best of {} matches'.format(len(matches)))
+                rospy.logwarn(
+                    'Picking best of {} matches'.format(len(matches)))
                 best_match = None
                 for match in matches:
                     if best_match is None or match.error < best_match.error:
@@ -793,7 +798,8 @@ class Interaction:
             # We must update the world state with the registered landmarks.
             # If we already looked for tabletop objects, then we should not
             # clear the world state, as it has already been cleared earlier.
-            should_clear_world = not current_action.is_object_required()
+            should_clear_world = not current_action.is_tabletop_object_required(
+            )
             if should_clear_world:
                 world._reset_objects()
             for db_id, landmark in registered_landmarks.items():
