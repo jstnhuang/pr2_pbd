@@ -120,7 +120,9 @@ class Interaction:
                                                  None),
             Command.START_RECORDING_MOTION: Response(self._start_recording,
                                                      None),
-            Command.STOP_RECORDING_MOTION: Response(self._stop_recording, None)
+            Command.STOP_RECORDING_MOTION: Response(self._stop_recording, None),
+            Command.FREEZE_HEAD: Response(self._freeze_head, None),
+            Command.RELAX_HEAD: Response(self._relax_head, None),
         }
 
         # Span off a thread to run the update loops.
@@ -652,6 +654,28 @@ class Interaction:
             return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
         else:
             return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
+
+    def _freeze_head(self, __=None):
+        '''Freezes the head.
+
+        Args:
+            __: Unused
+
+        Returns:
+            [str, int]: a speech response and a GazeGoal.* constant
+        '''
+        return [RobotSpeech.STEP_RECORDED, GazeGoal.FREEZE]
+
+    def _relax_head(self, __=None):
+        '''Freezes the head.
+
+        Args:
+            __: Unused
+
+        Returns:
+            [str, int]: a speech response and a GazeGoal.* constant
+        '''
+        return [RobotSpeech.STEP_RECORDED, GazeGoal.RELAX]
 
     def _empty_response(self, responses):
         '''Default response to speech commands; returns what it is

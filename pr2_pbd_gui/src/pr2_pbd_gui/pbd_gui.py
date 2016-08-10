@@ -99,6 +99,8 @@ class PbDGUI(Plugin):
         self.commands[Command.DELETE_ALL_STEPS] = 'Delete all'
         self.commands[Command.DELETE_LAST_STEP] = 'Delete last'
         self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
+        self.commands[Command.FREEZE_HEAD] = 'Freeze head'
+        self.commands[Command.RELAX_HEAD] = 'Relax head'
 
         self.currentAction = -1
         self.currentStep = -1
@@ -168,6 +170,11 @@ class PbDGUI(Plugin):
         misc_grid3.addWidget(self.create_button(Command.CLOSE_LEFT_HAND))
         misc_grid3.addStretch(1)
 
+        head_grid = QtGui.QHBoxLayout()
+        head_grid.addWidget(self.create_button(Command.FREEZE_HEAD))
+        head_grid.addWidget(self.create_button(Command.RELAX_HEAD))
+        head_grid.addStretch(1)
+
         misc_grid4 = QtGui.QHBoxLayout()
         misc_grid4.addWidget(self.create_button(Command.PREV_ACTION))
         misc_grid4.addWidget(self.create_button(Command.NEXT_ACTION))
@@ -194,6 +201,7 @@ class PbDGUI(Plugin):
         allWidgetsBox.addItem(QtGui.QSpacerItem(100, 20))
         allWidgetsBox.addLayout(misc_grid2)
         allWidgetsBox.addLayout(misc_grid3)
+        allWidgetsBox.addLayout(head_grid)
         allWidgetsBox.addItem(QtGui.QSpacerItem(100, 20))
         allWidgetsBox.addLayout(misc_grid4)
         allWidgetsBox.addItem(QtGui.QSpacerItem(100, 20))

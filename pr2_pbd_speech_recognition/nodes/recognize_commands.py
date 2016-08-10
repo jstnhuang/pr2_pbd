@@ -28,10 +28,11 @@ class CommandRecognizer:
 			Command.EXECUTE_ACTION,
 			Command.NEXT_ACTION,
 			Command.PREV_ACTION,
-
 			Command.SAVE_POSE,
 			Command.START_RECORDING_MOTION,
-			Command.STOP_RECORDING_MOTION
+			Command.STOP_RECORDING_MOTION,
+                        Command.FREEZE_HEAD,
+                        Command.RELAX_HEAD
 		]
 
     def receiveSphinxData(self,data):

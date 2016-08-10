@@ -14,6 +14,10 @@ string OPEN_LEFT_HAND = open-left-hand
 string CLOSE_RIGHT_HAND = close-right-hand
 string CLOSE_LEFT_HAND = close-left-hand
 
+# Relax/freeze head
+string RELAX_HEAD = relax-head
+string FREEZE_HEAD = freeze-head
+
 # General programming
 string RECORD_OBJECT_POSE = record-object-pose
 string SAVE_POSE = save-pose
