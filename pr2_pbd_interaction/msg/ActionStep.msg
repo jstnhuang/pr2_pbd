@@ -4,8 +4,8 @@
 uint8 ARM_TARGET=0
 uint8 ARM_TRAJECTORY=1 # Unsupported
 uint8 type # The type of step, only ARM_TARGET is supported.
-ArmTarget armTarget # the position of the two arms.
-ArmTrajectory armTrajectory # Unsupported
-Condition preCond # Unused
-Condition postCond # Unused
-GripperAction gripperAction # Whether each gripper is opened or closed.
+pr2_pbd_interaction/ArmTarget armTarget # the position of the two arms.
+pr2_pbd_interaction/ArmTrajectory armTrajectory # Unsupported
+pr2_pbd_interaction/Condition preCond # Unused
+pr2_pbd_interaction/Condition postCond # Unused
+pr2_pbd_interaction/GripperAction gripperAction # Whether each gripper is opened or closed.
