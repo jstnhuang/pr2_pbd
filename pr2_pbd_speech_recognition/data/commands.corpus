@@ -9,6 +9,7 @@ close-left-hand
 relax-head
 freeze-head
 record-object-pose
+record-custom-landmark
 save-pose
 execute-action
 stop-execution

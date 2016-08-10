@@ -24,6 +24,7 @@ class CommandRecognizer:
 			Command.FREEZE_RIGHT_ARM,
 			Command.FREEZE_LEFT_ARM,
 			Command.RECORD_OBJECT_POSE,
+			Command.RECORD_LANDMARK,
 			Command.CREATE_NEW_ACTION,
 			Command.EXECUTE_ACTION,
 			Command.NEXT_ACTION,
