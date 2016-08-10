@@ -686,7 +686,10 @@ class Interaction:
                                            resp.db_id)
         rospy.loginfo('Adding landmark {}, ID: {}'.format(resp.name, resp.db_id))
         self._world.add_landmark(landmark)
-        return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
+        # The user should have frozen the head before recording a custom
+        # landmark. Even if they didn't, relaxing the head shouldn't have
+        # adverse effects.
+        return [RobotSpeech.START_STATE_RECORDED, GazeGoal.RELAX]
 
     def _freeze_head(self, __=None):
         '''Freezes the head.
