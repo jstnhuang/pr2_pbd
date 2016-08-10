@@ -31,17 +31,17 @@ add_message_files(
   FILES
   Action.msg
   ActionStep.msg
-  ArmState.msg
-  Condition.msg
-  GripperAction.msg
-  Landmark.msg
   ActionStepSequence.msg
+  ArmState.msg
   ArmTarget.msg
-  ExecutionStatus.msg
-  RobotSound.msg
   ArmTrajectory.msg
+  Condition.msg
+  ExecutionStatus.msg
   ExperimentState.msg
+  GripperAction.msg
   GuiCommand.msg
+  Landmark.msg
+  RobotSound.msg
 )
 
 add_service_files(
