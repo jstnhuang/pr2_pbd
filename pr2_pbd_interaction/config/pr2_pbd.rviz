@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /DepthCloud1/Auto Size1
+        - /Custom landmarks1
       Splitter Ratio: 0.5
     Tree Height: 538
   - Class: rviz/Selection
@@ -51,454 +52,18 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz/RobotModel
       Collision Enabled: false
-      Enabled: true
+      Enabled: false
       Links:
         All Links Enabled: true
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        base_bellow_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        base_footprint:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        base_laser_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        bl_caster_l_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        bl_caster_r_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        bl_caster_rotation_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        br_caster_l_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        br_caster_r_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        br_caster_rotation_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        double_stereo_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        fl_caster_l_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        fl_caster_r_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        fl_caster_rotation_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        fr_caster_l_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        fr_caster_r_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        fr_caster_rotation_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        head_mount_kinect_ir_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        head_mount_kinect_ir_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        head_mount_kinect_rgb_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        head_mount_kinect_rgb_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        head_mount_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        head_mount_prosilica_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        head_mount_prosilica_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        head_pan_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        head_plate_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        head_tilt_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        high_def_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        high_def_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        imu_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_elbow_flex_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_forearm_cam_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_forearm_cam_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_forearm_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_forearm_roll_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_gripper_l_finger_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_gripper_l_finger_tip_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_gripper_l_finger_tip_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_gripper_led_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_gripper_motor_accelerometer_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_gripper_motor_screw_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_gripper_motor_slider_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_gripper_palm_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_gripper_r_finger_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_gripper_r_finger_tip_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_gripper_tool_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_shoulder_lift_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_shoulder_pan_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_torso_lift_side_plate_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_upper_arm_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_upper_arm_roll_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_wrist_flex_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_wrist_roll_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        laser_tilt_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        laser_tilt_mount_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        narrow_stereo_l_stereo_camera_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        narrow_stereo_l_stereo_camera_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        narrow_stereo_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        narrow_stereo_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        narrow_stereo_r_stereo_camera_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        narrow_stereo_r_stereo_camera_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        projector_wg6802418_child_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        projector_wg6802418_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        r_elbow_flex_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_forearm_cam_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        r_forearm_cam_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        r_forearm_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_forearm_roll_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_gripper_l_finger_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_gripper_l_finger_tip_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        r_gripper_l_finger_tip_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_gripper_led_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        r_gripper_motor_accelerometer_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_gripper_motor_screw_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        r_gripper_motor_slider_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        r_gripper_palm_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_gripper_r_finger_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_gripper_r_finger_tip_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_gripper_tool_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        r_shoulder_lift_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_shoulder_pan_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_torso_lift_side_plate_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        r_upper_arm_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_upper_arm_roll_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_wrist_flex_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_wrist_roll_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        sensor_mount_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        torso_lift_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        torso_lift_motor_screw_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        wide_stereo_l_stereo_camera_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        wide_stereo_l_stereo_camera_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        wide_stereo_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        wide_stereo_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        wide_stereo_r_stereo_camera_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        wide_stereo_r_stereo_camera_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
       Name: RobotModel
       Robot Description: robot_description
       TF Prefix: ""
       Update Interval: 0
-      Value: true
+      Value: false
       Visual Enabled: true
     - Class: rviz/InteractiveMarkers
       Enable Transparency: true
@@ -549,13 +114,13 @@ Visualization Manager:
       Value: true
     - Class: rviz/InteractiveMarkers
       Enable Transparency: true
-      Enabled: true
+      Enabled: false
       Name: Arm controllers
       Show Axes: false
       Show Descriptions: true
       Show Visual Aids: false
       Update Topic: /interactive_arm_control/update
-      Value: true
+      Value: false
     - Alpha: 1
       Auto Size:
         Auto Size Factor: 1
@@ -636,6 +201,155 @@ Visualization Manager:
       Show Visual Aids: false
       Update Topic: /roi/update
       Value: true
+    - Class: rviz/Group
+      Displays:
+        - Alpha: 0.3
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: ""
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 4096
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: Scene
+          Position Transformer: ""
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.01
+          Style: Points
+          Topic: /scene
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: ""
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 4096
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: Landmark model
+          Position Transformer: ""
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.01
+          Style: Points
+          Topic: /landmark
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: ""
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 4096
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: Heatmap
+          Position Transformer: ""
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.005
+          Style: Flat Squares
+          Topic: heatmap
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: ""
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 4096
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: Alignments
+          Position Transformer: ""
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.01
+          Style: Points
+          Topic: alignment
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: ""
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 4096
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: Output
+          Position Transformer: ""
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.005
+          Style: Squares
+          Topic: output
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+      Enabled: true
+      Name: Custom landmarks
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -660,22 +374,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.90137
+      Distance: 1.70851
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.543329
-        Y: -0.404052
-        Z: 0.656808
+        X: 0.578244
+        Y: -0.00774456
+        Z: 0.947724
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.424796
+      Pitch: 0.769798
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 6.2304
+      Yaw: 3.53542
     Saved: ~
 Window Geometry:
   Displays:
@@ -695,5 +409,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1311
-  X: 45
+  X: 42
   Y: 49
