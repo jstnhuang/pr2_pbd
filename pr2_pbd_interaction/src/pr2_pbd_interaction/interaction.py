@@ -767,6 +767,10 @@ class Interaction:
                 if landmark.db_id in registered_landmarks:
                     continue
 
+                # Move head to look at where the custom landmark was at
+                # demonstration time -- we assume that it is roughly in the
+                # same location at run time.
+                Response.force_look_at_point(landmark.pose)
                 rospy.loginfo('Searching for landmark: {}, ID: {}'.format(landmark.name, landmark.db_id))
                 matches = self._custom_landmark_finder.find(landmark.db_id)
                 if matches is None or len(matches) == 0:

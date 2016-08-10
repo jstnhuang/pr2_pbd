@@ -152,6 +152,15 @@ class Response:
         Response.gaze_client.send_goal(goal)
 
     @staticmethod
+    def force_look_at_point(point):
+        '''Looks at a specific point even if enable_social_gaze is false
+
+        Args:
+            point (Point) in the base frame to look at
+        '''
+        Response.gaze_client.send_goal(GazeGoal(GazeGoal.LOOK_AT_POINT, point))
+
+    @staticmethod
     def look_at_point(point):
         '''Looks at a specific point.
 
