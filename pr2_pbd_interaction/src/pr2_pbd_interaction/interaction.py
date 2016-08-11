@@ -777,6 +777,8 @@ class Interaction:
                 # same location at run time.
                 # Assumes that the landmark pose is given in the base frame.
                 Response.force_look_at_point(landmark.pose.position)
+                if not Response.gaze_client.wait_for_result(rospy.Duration(10)):
+                    rospy.logwarn('Took longer than 10 seconds to look down.')
                 rospy.loginfo('Searching for landmark: {}, ID: {}'.format(
                     landmark.name, landmark.db_id))
                 matches = self._custom_landmark_finder.find(landmark.db_id)
