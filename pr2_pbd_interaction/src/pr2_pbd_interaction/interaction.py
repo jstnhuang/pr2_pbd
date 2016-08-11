@@ -804,7 +804,7 @@ class Interaction:
             should_clear_world = not current_action.is_tabletop_object_required(
             )
             if should_clear_world:
-                world._reset_objects()
+                self._world._reset_objects()
             for db_id, landmark in registered_landmarks.items():
                 world_landmark = WorldLandmark(landmark.name, landmark.pose,
                                                landmark.dimensions,
