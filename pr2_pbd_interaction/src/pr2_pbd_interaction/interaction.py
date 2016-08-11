@@ -779,6 +779,7 @@ class Interaction:
                 Response.force_look_at_point(landmark.pose.position)
                 if not Response.gaze_client.wait_for_result(rospy.Duration(10)):
                     rospy.logwarn('Took longer than 10 seconds to look down.')
+                rospy.sleep(2)
                 rospy.loginfo('Searching for landmark: {}, ID: {}'.format(
                     landmark.name, landmark.db_id))
                 matches = self._custom_landmark_finder.find(landmark.db_id)
