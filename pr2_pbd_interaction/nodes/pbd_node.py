@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 '''This runs the PbD system (i.e. the backend).'''
 
-# Core ROS imports come first.
-import rospy
-import signal
-import pr2_pbd_interaction
+from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from pr2_pbd_interaction import ActionDatabase
 from pr2_pbd_interaction import Arms
 from pr2_pbd_interaction import ExecuteActionServer
@@ -12,6 +9,11 @@ from pr2_pbd_interaction import Interaction
 from pr2_pbd_interaction import Session
 from pr2_pbd_interaction import World
 from pr2_pbd_interaction.srv import ExecuteActionById
+from tabletop_object_detector.srv import TabletopSegmentation
+import pr2_pbd_interaction
+import rospy
+import signal
+import tf
 
 
 def signal_handler(signal, frame):
@@ -32,12 +34,24 @@ if __name__ == '__main__':
     # Register as a ROS node.
     rospy.init_node('pr2_pbd_interaction', anonymous=True)
 
-    # Run the system
+    # Build world object
+    tf_listener = tf.TransformListener()
+    im_server = InteractiveMarkerServer('world_objects')
+    rospy.wait_for_service('tabletop_segmentation', timeout=5)
+    segment_tabletop = rospy.ServiceProxy('tabletop_segmentation',
+                                          TabletopSegmentation)
+    world = World(tf_listener, im_server, segment_tabletop)
+
+    # Build session
     db = ActionDatabase.build_real()
-    world = World()
-    session = Session(world.get_frame_list(), db)
-    arms = Arms(World.tf_listener)
+    session = Session(world, world.get_frame_list(), db)
+
+    # Build arms
+    arms = Arms(tf_listener, world)
+
+    # Build interaction
     interaction = Interaction(arms, session, world)
+
     execute_server = ExecuteActionServer(interaction)
     rospy.Service('execute_action', ExecuteActionById, execute_server.serve)
 

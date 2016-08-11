@@ -1,4 +1,4 @@
 ArmState rArm
 ArmState lArm
-float64 rArmVelocity
-float64 lArmVelocity
+float64 rArmVelocity # Unused 
+float64 lArmVelocity # Unused

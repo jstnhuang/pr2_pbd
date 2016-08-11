@@ -26,7 +26,7 @@ from pr2_controllers_msgs.msg import JointTrajectoryAction, JointTrajectoryGoal
 from sound_play.msg import SoundRequest
 
 # Local
-from pr2_pbd_interaction.msg import Side, GuiCommand, GripperState
+from pr2_pbd_interaction.msg import GuiCommand, GripperState
 from pr2_pbd_speech_recognition.msg import Command
 from pr2_pbd_interaction.srv import Ping
 from robot_speech import RobotSpeech

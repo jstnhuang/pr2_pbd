@@ -42,18 +42,22 @@ class SocialGaze:
         GazeGoal.LOOK_DOWN: 'LOOK_DOWN',
         GazeGoal.NOD_ONCE: 'NOD_ONCE ',
         GazeGoal.SHAKE_ONCE: 'SHAKE_ONCE',
+        GazeGoal.FREEZE: 'FREEZE',
+        GazeGoal.RELAX: 'RELAX',
     }
     '''This maps gaze goal constants to human-readable forms.'''
 
     def __init__(self):
-        self.defaultLookatPoint = Point(1, 0, 1.35)
+        self.defaultLookatPoint = Point(1, 0, 1.3)
         self.downLookatPoint = Point(0.5, 0, 0.5)
-        self.targetLookatPoint = Point(1, 0, 1.35)
-        self.currentLookatPoint = Point(1, 0, 1.35)
+        self.targetLookatPoint = Point(1, 0, 1.3)
+        self.currentLookatPoint = Point(1, 0, 1.3)
 
         self.currentGazeAction = GazeGoal.LOOK_FORWARD
         self.prevGazeAction = self.currentGazeAction
         self.prevTargetLookatPoint = array(self.defaultLookatPoint)
+
+        self.isFrozen = False
 
         # Some constants
         self.doNotInterrupt = [GazeGoal.GLANCE_RIGHT_EE,
@@ -95,9 +99,11 @@ class SocialGaze:
 
         fromFrame = '/base_link'
         if (armIndex == 0):
-            toFrame = '/r_wrist_roll_link'
+            #toFrame = '/r_wrist_roll_link'
+            toFrame = '/r_gripper_l_finger_tip_link'
         else:
-            toFrame = '/l_wrist_roll_link'
+            #toFrame = '/l_wrist_roll_link'
+            toFrame = '/l_gripper_l_finger_tip_link'
 
         try:
             t = self.tfListener.getLatestCommonTime(fromFrame, toFrame)
@@ -148,6 +154,10 @@ class SocialGaze:
     def executeGazeAction(self, goal):
         command = goal.action
         if (self.doNotInterrupt.count(self.currentGazeAction) == 0):
+            if self.isFrozen and command != GazeGoal.RELAX:
+                self.gazeActionServer.set_aborted()
+                return
+
             if (self.currentGazeAction != command or
                 command == GazeGoal.LOOK_AT_POINT):
                 self.isActionComplete = False
@@ -173,15 +183,21 @@ class SocialGaze:
                     self.startGlance(1)
                 elif (command == GazeGoal.LOOK_AT_POINT):
                     self.targetLookatPoint = goal.point
+                elif (command == GazeGoal.FREEZE):
+                    self.isFrozen = True
+                    self.isActionComplete = True
+                elif (command == GazeGoal.RELAX):
+                    self.isFrozen = False
+                    self.isActionComplete = True
                 rospy.loginfo('\tSetting gaze action to: ' +
                               SocialGaze.gaze_goal_strs[command])
                 self.currentGazeAction = command
 
                 while (not self.isActionComplete):
                     time.sleep(0.1)
-                self.currentGazeAction = None
+                #self.currentGazeAction = None
                 # Perturb the head goal so it gets updated in the update loop.
-                self.headGoal.target.point.x += 1
+                self.headGoal.target.point.x += 0.01
                 self.gazeActionServer.set_succeeded()
             else:
                 self.gazeActionServer.set_aborted()
@@ -261,50 +277,50 @@ class SocialGaze:
             return target
 
     def update(self):
+        if not self.isFrozen:
+            isActionPossiblyComplete = True
+            if (self.currentGazeAction == GazeGoal.FOLLOW_RIGHT_EE):
+                self.targetLookatPoint = self.getEEPos(0)
 
-        isActionPossiblyComplete = True
-        if (self.currentGazeAction == GazeGoal.FOLLOW_RIGHT_EE):
-            self.targetLookatPoint = self.getEEPos(0)
+            elif (self.currentGazeAction == GazeGoal.FOLLOW_LEFT_EE):
+                self.targetLookatPoint = self.getEEPos(1)
 
-        elif (self.currentGazeAction == GazeGoal.FOLLOW_LEFT_EE):
-            self.targetLookatPoint = self.getEEPos(1)
+            elif (self.currentGazeAction == GazeGoal.FOLLOW_FACE):
+                self.getFaceLocation()
+                self.targetLookatPoint = self.facePos
 
-        elif (self.currentGazeAction == GazeGoal.FOLLOW_FACE):
-            self.getFaceLocation()
-            self.targetLookatPoint = self.facePos
+            elif (self.currentGazeAction == GazeGoal.NOD):
+                self.targetLookatPoint = self.getNextNodPoint(
+                    self.currentLookatPoint, self.targetLookatPoint)
+                self.headGoal.min_duration = rospy.Duration(0.5)
+                isActionPossiblyComplete = False
 
-        elif (self.currentGazeAction == GazeGoal.NOD):
-            self.targetLookatPoint = self.getNextNodPoint(
+            elif (self.currentGazeAction == GazeGoal.SHAKE):
+                self.targetLookatPoint = self.getNextShakePoint(
+                    self.currentLookatPoint, self.targetLookatPoint)
+                self.headGoal.min_duration = rospy.Duration(0.5)
+                isActionPossiblyComplete = False
+
+            elif (self.currentGazeAction == GazeGoal.GLANCE_RIGHT_EE or
+                  self.currentGazeAction == GazeGoal.GLANCE_LEFT_EE):
+                self.targetLookatPoint = self.getNextGlancePoint(
+                    self.currentLookatPoint, self.targetLookatPoint)
+                isActionPossiblyComplete = False
+
+            self.currentLookatPoint = self.filterLookatPosition(
                 self.currentLookatPoint, self.targetLookatPoint)
-            self.headGoal.min_duration = rospy.Duration(0.5)
-            isActionPossiblyComplete = False
-
-        elif (self.currentGazeAction == GazeGoal.SHAKE):
-            self.targetLookatPoint = self.getNextShakePoint(
-                self.currentLookatPoint, self.targetLookatPoint)
-            self.headGoal.min_duration = rospy.Duration(0.5)
-            isActionPossiblyComplete = False
-
-        elif (self.currentGazeAction == GazeGoal.GLANCE_RIGHT_EE or
-              self.currentGazeAction == GazeGoal.GLANCE_LEFT_EE):
-            self.targetLookatPoint = self.getNextGlancePoint(
-                self.currentLookatPoint, self.targetLookatPoint)
-            isActionPossiblyComplete = False
-
-        self.currentLookatPoint = self.filterLookatPosition(
-            self.currentLookatPoint, self.targetLookatPoint)
-        if self.currentGazeAction is None:
-            pass
-        elif (self.isTheSame(self.point2array(self.headGoal.target.point),
-                             self.point2array(self.targetLookatPoint))):
-            if (isActionPossiblyComplete):
-                if (self.headActionClient.get_state() == GoalStatus.SUCCEEDED):
-                    self.isActionComplete = True
-        else:
-            self.headGoal.target.point.x = self.currentLookatPoint.x
-            self.headGoal.target.point.y = self.currentLookatPoint.y
-            self.headGoal.target.point.z = self.currentLookatPoint.z
-            self.headActionClient.send_goal(self.headGoal)
+            if self.currentGazeAction is None:
+                pass
+            elif (self.isTheSame(self.point2array(self.headGoal.target.point),
+                                 self.point2array(self.targetLookatPoint))):
+                if (isActionPossiblyComplete):
+                    if (self.headActionClient.get_state() == GoalStatus.SUCCEEDED):
+                        self.isActionComplete = True
+            else:
+                self.headGoal.target.point.x = self.currentLookatPoint.x
+                self.headGoal.target.point.y = self.currentLookatPoint.y
+                self.headGoal.target.point.z = self.currentLookatPoint.z
+                self.headActionClient.send_goal(self.headGoal)
 
         time.sleep(0.02)
 

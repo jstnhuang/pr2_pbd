@@ -56,7 +56,7 @@ class ProgrammedAction:
 
     _marker_publisher = None
 
-    def __init__(self, action_index, step_click_cb):
+    def __init__(self, world, action_index, step_click_cb):
         '''
         Args:
             action_index (int): The index of this action.
@@ -67,6 +67,7 @@ class ProgrammedAction:
         '''
         # Initialize a bunch of state.
         self.name = ''  # Human-friendly name for this action.
+        self._world = world
         self.seq = ActionStepSequence()
         self.action_index = action_index
         self.step_click_cb = step_click_cb
@@ -99,12 +100,12 @@ class ProgrammedAction:
                                                                  MarkerArray)
 
     @staticmethod
-    def from_msg(action_msg, action_index=0, callback=None):
+    def from_msg(action_msg, world, action_index=0, callback=None):
         '''Creates a ProgrammedAction from an Action ROS msg.
         '''
         if callback is None:
             callback = lambda x: None
-        p = ProgrammedAction(action_index, callback)
+        p = ProgrammedAction(world, action_index, callback)
         p.name = action_msg.name
         p.seq = action_msg.sequence
         return p
@@ -252,10 +253,10 @@ class ProgrammedAction:
             # NOTE(mbforbes): One of many instances of code duplication
             # b/c of right/left...
             last_step = self.seq.seq[-1]
-            r_marker = ActionStepMarker(self.n_frames(), Side.RIGHT, last_step,
+            r_marker = ActionStepMarker(self._world, self.n_frames(), Side.RIGHT, last_step,
                                         self.marker_click_cb)
             r_marker.update_ref_frames(object_list)
-            l_marker = ActionStepMarker(self.n_frames(), Side.LEFT, last_step,
+            l_marker = ActionStepMarker(self._world, self.n_frames(), Side.LEFT, last_step,
                                         self.marker_click_cb)
             l_marker.update_ref_frames(object_list)
             self.r_markers.append(r_marker)
@@ -499,12 +500,14 @@ class ProgrammedAction:
                 step.type == ActionStep.ARM_TRAJECTORY):
                 # Construct the markers.
                 r_marker = ActionStepMarker(
+                    self._world,
                     i + 1,  # step_number
                     Side.RIGHT,  # arm_index
                     step,  # action_step
                     self.marker_click_cb  # marker_click_cb
                 )
                 l_marker = ActionStepMarker(
+                    self._world,
                     i + 1,  # step_number
                     Side.LEFT,  # arm_index
                     step,  # action_step
@@ -637,7 +640,7 @@ class ProgrammedAction:
         Returns:
             ProgrammedAction
         '''
-        action = ProgrammedAction(self.action_index, self.step_click_cb)
+        action = ProgrammedAction(self._world, self.action_index, self.step_click_cb)
         action.seq = ActionStepSequence()
         for action_step in self.seq.seq:
             copy = ProgrammedAction._copy_action_step(action_step)

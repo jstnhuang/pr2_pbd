@@ -1,6 +1,6 @@
 uint8 ROBOT_BASE=0
-uint8 ROBOT_OTHER_ARM=1
-uint8 PREVIOUS_TARGET=2
+uint8 ROBOT_OTHER_ARM=1 # Unused
+uint8 PREVIOUS_TARGET=2 # Unused
 uint8 OBJECT=3
 uint8 refFrame
 geometry_msgs/Pose ee_pose
