@@ -775,7 +775,8 @@ class Interaction:
                 # Move head to look at where the custom landmark was at
                 # demonstration time -- we assume that it is roughly in the
                 # same location at run time.
-                Response.force_look_at_point(landmark.pose)
+                # Assumes that the landmark pose is given in the base frame.
+                Response.force_look_at_point(landmark.pose.position)
                 rospy.loginfo('Searching for landmark: {}, ID: {}'.format(
                     landmark.name, landmark.db_id))
                 matches = self._custom_landmark_finder.find(landmark.db_id)
