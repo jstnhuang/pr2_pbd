@@ -180,6 +180,11 @@ class Arm:
             for i in range(0, len(self.ik_joints)):
                 seed.append((self.ik_limits[i][0] +
                              self.ik_limits[i][1]) / 2.0)
+        if ee_pose is None:
+            rospy.logerr('End effector pose was None!')
+        if seed is None:
+            rospy.logerr('Seed is still None!')
+
         self.ik_request.ik_request.robot_state.joint_state.position = seed
 
         try:
@@ -192,7 +197,7 @@ class Arm:
                 return [response_positions[i] for i, x in enumerate(response_names) if x in self.joint_names]
             else:
                 return None
-        except rospy.ServiceException:
+        except Exception:
             rospy.logerr('Exception while getting the IK solution.')
             return None
 
