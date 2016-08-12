@@ -322,6 +322,7 @@ class Interaction:
             A Response, specifying how the robot should respond to this action.
         '''
         # Command: switch to a specified action.
+        self._world.clear_all_objects()
         success = self.session.switch_to_action_by_index(
             index, self._world.get_frame_list())
         if not success:
@@ -347,6 +348,7 @@ class Interaction:
         Returns:
             A Response, specifying how the robot should respond to this action.
         '''
+        self._world.clear_all_objects()
         success = self.session.switch_to_action(action_id,
                                                 self._world.get_frame_list())
         if not success:
