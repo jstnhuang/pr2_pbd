@@ -41,6 +41,7 @@
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>actionlib</build_depend>
+  <build_depend>actionlib_msgs</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>object_search_msgs</build_depend> <!-- github.com/jstnhuang/rapid -->
   <build_depend>mongo_msg_db</build_depend> 
@@ -50,6 +51,7 @@
   <build_depend>rospy</build_depend>
   <build_depend>rospy_message_converter</build_depend>
   <build_depend>static_cloud_db</build_depend> <!-- github.com/jstnhuang/rapid -->
+  <run_depend>actionlib_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>object_search_msgs</run_depend> <!-- github.com/jstnhuang/rapid -->
   <run_depend>message_runtime</run_depend>

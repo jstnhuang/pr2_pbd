@@ -10,6 +10,7 @@ roslib.load_manifest('pr2_pbd_interaction')
 import rospy
 
 # System builtins
+import copy
 import threading
 import os
 
@@ -151,51 +152,8 @@ class ProgrammedAction:
         Returns:
             ActionStep
         '''
-        copy = ActionStep()
-        copy.type = int(action_step.type)
-
-        # Only the arm target is filled if this is an arm target, and
-        # vice versa with a trajectory.
-        if copy.type == ActionStep.ARM_TARGET:
-            copy.armTarget = ArmTarget()
-            copy.armTarget.rArmVelocity = float(
-                action_step.armTarget.rArmVelocity)
-            copy.armTarget.lArmVelocity = float(
-                action_step.armTarget.lArmVelocity)
-            copy.armTarget.rArm = ProgrammedAction._copy_arm_state(
-                action_step.armTarget.rArm)
-            copy.armTarget.lArm = ProgrammedAction._copy_arm_state(
-                action_step.armTarget.lArm)
-        elif copy.type == ActionStep.ARM_TRAJECTORY:
-            copy.armTrajectory = ArmTrajectory()
-            copy.armTrajectory.timing = action_step.armTrajectory.timing[:]
-            for j in range(len(action_step.armTrajectory.timing)):
-                copy.armTrajectory.rArm.append(
-                    ProgrammedAction._copy_arm_state(
-                        action_step.armTrajectory.rArm[j]))
-                copy.armTrajectory.lArm.append(
-                    ProgrammedAction._copy_arm_state(
-                        action_step.armTrajectory.lArm[j]))
-            copy.armTrajectory.rRefFrame = int(
-                action_step.armTrajectory.rRefFrame)
-            copy.armTrajectory.lRefFrame = int(
-                action_step.armTrajectory.lRefFrame)
-            # WARNING: the following is not really copying
-            r_obj = action_step.armTrajectory.rRefFrameLandmark
-            l_obj = action_step.armTrajectory.lRefFrameLandmark
-            copy.armTrajectory.rRefFrameLandmark = r_obj
-            copy.armTrajectory.lRefFrameLandmark = l_obj
-
-        # NOTE(mbforbes): Conditions currently aren't copied (though
-        # they also currently don't do anything, so I'm leaving for
-        # now.)
-
-        # Both arm targets and trajectories have a gripper action.
-        copy.gripperAction = GripperAction(
-            GripperState(action_step.gripperAction.rGripper.state),
-            GripperState(action_step.gripperAction.lGripper.state))
-        return copy
-
+        return copy.deepcopy(action_step)
+        
     @staticmethod
     def _copy_arm_state(arm_state):
         '''Returns a copy of arm_state.
@@ -206,14 +164,7 @@ class ProgrammedAction:
         Returns:
             ArmState
         '''
-        copy = ArmState()
-        copy.refFrame = int(arm_state.refFrame)
-        copy.joint_pose = arm_state.joint_pose[:]
-        copy.ee_pose = Pose(arm_state.ee_pose.position,
-                            arm_state.ee_pose.orientation)
-        # WARNING: the following is not really copying
-        copy.refFrameLandmark = arm_state.refFrameLandmark
-        return copy
+        return copy.deepcopy(arm_state)
 
     # ##################################################################
     # Instance methods: Public (API)
@@ -601,7 +552,7 @@ class ProgrammedAction:
                     l_landmark = l_arm_state.refFrameLandmark
                     if l_landmark.type == Landmark.CLOUD_BOX:
                         landmarks[l_landmark.db_id] = l_landmark
-        return landmarks.values()
+        return copy.deepcopy(landmarks.values())
 
     def get_gripper_states(self, arm_index):
         '''Returns the gripper states for all action steps for arm
