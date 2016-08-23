@@ -56,9 +56,9 @@ class ExecuteActionServer(object):
                 break
             rate.sleep()
 
-        if self.arms.status == ExecutionStatus.SUCCEEDED:
+        if self._interaction.arms.status == ExecutionStatus.SUCCEEDED:
             self._server.set_succeeded()
-        elif self.arms.status == ExecutionStates.PREEMPTED:
+        elif self._interaction.arms.status == ExecutionStates.PREEMPTED:
             error = 'The PbD action was preempted.'
             result = ExecuteResult()
             result.error = error
