@@ -1,6 +1,7 @@
 from pr2_pbd_interaction.msg import ExecuteAction
 from pr2_pbd_interaction.msg import ExecuteFeedback
 from pr2_pbd_interaction.msg import ExecuteResult
+from pr2_pbd_interaction.msg import ExecutionStatus
 from response import Response
 import actionlib
 from robot_speech import RobotSpeech
@@ -29,10 +30,15 @@ class ExecuteActionServer(object):
         """
         self._interaction.switch_to_action_by_id(goal.action_id)
         response_params = self._interaction._execute_action()
+        rospy.loginfo('response: {}'.format(response_params[0]))
         if RobotSpeech.START_EXECUTION not in response_params[0]:
             result = ExecuteResult()
             result.error = response_params[0]
             self._server.set_aborted(result=result, text=result.error)
+            response = Response(self._interaction._empty_response,
+                                response_params)
+            response.respond()
+            return
 
         response = Response(self._interaction._empty_response, response_params)
         response.respond()
@@ -50,8 +56,19 @@ class ExecuteActionServer(object):
                 break
             rate.sleep()
 
-        self._server.set_succeeded()
+        if self.arms.status == ExecutionStatus.SUCCEEDED:
+            self._server.set_succeeded()
+        elif self.arms.status == ExecutionStates.PREEMPTED:
+            error = 'The PbD action was preempted.'
+            result = ExecuteResult()
+            result.error = error
+            self._server.set_aborted(result=result, text=error)
+        else:  # NO_IK, other statuses are not used in practice
+            error = 'The robot\'s arms couldn\'t reach some poses.'
+            result = ExecuteResult()
+            result.error = error
+            self._server.set_aborted(result=result, text=error)
 
     def _preempt(self):
         if self._interaction.arms.is_executing():
-            self._interaction.arms.stop_execution();
+            self._interaction.arms.stop_execution()
