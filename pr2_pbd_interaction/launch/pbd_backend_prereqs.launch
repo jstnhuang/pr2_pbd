@@ -10,7 +10,6 @@
   pbd_backend in general) work on both the real and simulated robot.
   -->
 
-  <arg name="kinect_frame_prefix" default="/head_mount_kinect" />
   <arg name="kinect_camera_name" default="head_mount_kinect" />
     
   <!-- These arguments can be passed in. -->
@@ -19,10 +18,10 @@
   <!-- This makes the robot look around appropriately -->
   <include file="$(find pr2_social_gaze)/launch/gaze.launch"/>
 
-    <include file="$(find pr2_moveit_config)/launch/move_group.launch" />
+  <include file="$(find pr2_moveit_config)/launch/move_group.launch" />
 
   <include file="$(find tabletop_object_detector)/launch/tabletop_segmentation.launch">
-      <arg name="tabletop_segmentation_points_in" value="$(arg kinect_camera_name)/depth_registered/points" />
+    <arg name="tabletop_segmentation_points_in" value="$(arg kinect_camera_name)/depth_registered/points" />
   </include>
 
   <node name="pr2_arm_control" pkg="pr2_arm_control" type="arm_control_node.py" output="screen" />
@@ -33,5 +32,5 @@
   <node name="static_cloud_db" pkg="static_cloud_db" type="static_cloud_db.py" />
 
   <!-- Kinect launch -->
-  <include file="$(find pr2_pbd_interaction)/launch/kinect_tf.launch" />
+  <include file="$(find pr2_pbd_interaction)/launch/kinect.launch" />
 </launch>
