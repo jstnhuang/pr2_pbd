@@ -6,6 +6,7 @@ project(pr2_pbd_interaction)
 # TODO: remove all from COMPONENTS that are not catkin packages.
 find_package(catkin REQUIRED COMPONENTS
   actionlib
+  actionlib_msgs
   geometry_msgs
   message_generation
   mongo_msg_db_msgs
@@ -51,9 +52,16 @@ add_service_files(
   Ping.srv
 )
 
+add_action_files(
+  DIRECTORY action
+  FILES
+    Execute.action
+)
+
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+  actionlib_msgs
   std_msgs
   geometry_msgs
   tf

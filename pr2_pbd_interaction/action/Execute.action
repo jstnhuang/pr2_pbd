@@ -1,0 +1,6 @@
+# Executes a PbD action.
+
+string action_id # ID in MongoDB database of action to execute
+---
+string error # Error message
+---
