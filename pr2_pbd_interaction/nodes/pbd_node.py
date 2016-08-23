@@ -53,7 +53,7 @@ if __name__ == '__main__':
     interaction = Interaction(arms, session, world)
 
     execute_server = ExecuteActionServer(interaction)
-    rospy.Service('execute_action', ExecuteActionById, execute_server.serve)
+    execute_server.start()
 
     while (not rospy.is_shutdown()):
         interaction.update()
