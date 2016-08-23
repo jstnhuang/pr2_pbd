@@ -80,8 +80,8 @@ class SocialGaze:
 
         self.headGoal = PointHeadGoal()
         self.headGoal.target.header.frame_id = 'base_link'
-        #self.headGoal.pointing_frame = 'head_mount_kinect_rgb_link'
-        #self.headGoal.pointing_axis.x = 1
+        self.headGoal.pointing_frame = 'head_mount_kinect_rgb_link'
+        self.headGoal.pointing_axis.x = 1
         self.headGoal.min_duration = rospy.Duration(1.0)
         self.headGoal.target.point = Point(1, 0, 1)
 
