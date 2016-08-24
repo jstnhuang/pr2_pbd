@@ -49,7 +49,7 @@ class SocialGaze:
 
     def __init__(self):
         self.defaultLookatPoint = Point(1, 0, 1.3)
-        self.downLookatPoint = Point(0.5, 0, 0.5)
+        self.downLookatPoint = Point(0.7, 0, 0.7)
         self.targetLookatPoint = Point(1, 0, 1.3)
         self.currentLookatPoint = Point(1, 0, 1.3)
 
