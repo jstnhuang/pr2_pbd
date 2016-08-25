@@ -76,10 +76,11 @@ class CustomLandmarkFinder(object):
                 BASE_FRAME, scene.cloud.header.frame_id))
             return None
 
-        max_error = rospy.get_param('fitness_threshold', 0.0045)
+        max_error = rospy.get_param('fitness_threshold', 0.0055)
+        is_tabletop = rospy.get_param('is_tabletop', False)
         search_resp = self._find_landmark(scene=scene,
                                           object=get_resp.cloud,
-                                          is_tabletop=False,
+                                          is_tabletop=is_tabletop,
                                           max_error=max_error,
                                           min_results=0)
         return search_resp.matches
