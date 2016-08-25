@@ -754,7 +754,7 @@ class Interaction:
         self.session.save_current_action()
         current_action = self.session.get_current_action()
         rospy.loginfo('Executing action {}'.format(current_action.name))
-        self._world._reset_objects()
+        self._world.clear_all_objects()
 
         # Check if we need to find tabletop objects in this action.
         if current_action.is_tabletop_object_required():
@@ -807,6 +807,8 @@ class Interaction:
                                                landmark.dimensions,
                                                landmark.db_id)
                 self._world.add_landmark(world_landmark)
+
+        if current_action.is_tabletop_object_required() or len(custom_landmarks) > 0:
             current_action.update_objects(self._world.get_frame_list())
 
         self.arms.start_execution(current_action, EXECUTION_Z_OFFSET)
