@@ -8,6 +8,7 @@ from interactive_markers.interactive_marker_server import InteractiveMarkerServe
 from object_search_msgs.srv import RecordObject
 from object_search_msgs.srv import Search
 from pr2_pbd_interaction import ActionDatabase
+from pr2_pbd_interaction import ActionLandmarksServer
 from pr2_pbd_interaction import Arms
 from pr2_pbd_interaction import CustomLandmarkFinder
 from pr2_pbd_interaction import ExecuteActionServer
@@ -71,6 +72,12 @@ if __name__ == '__main__':
     interaction = Interaction(arms, session, world, capture_landmark,
                               landmark_finder)
 
+    # Server that outputs custom landmarks used in an action.
+    action_landmarks_server = ActionLandmarksServer(action_db)
+    get_landmarks_for_action = rospy.Service('pr2_pbd/landmarks_for_action',
+                                             action_landmarks_server.serve)
+
+    # Actionlib server to execute PbD actions.
     execute_server = ExecuteActionServer(interaction)
     execute_server.start()
 

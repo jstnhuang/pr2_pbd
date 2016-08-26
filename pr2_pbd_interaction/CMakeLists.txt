@@ -49,6 +49,7 @@ add_service_files(
   FILES
   ExecuteActionById.srv
   GetExperimentState.srv
+  GetLandmarksForAction.srv
   Ping.srv
 )
 

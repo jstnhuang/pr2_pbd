@@ -48,6 +48,31 @@ TOPIC_BAG_SEQ = 'sequence'  # used when saving
 # TODO(mbforbes): This should be in one module only.
 BASE_LINK = 'base_link'
 
+
+def custom_landmarks_from_sequence(self, sequence):
+    '''Returns a list of custom landmarks referenced in the given
+    ActionStepSequence.
+
+    Args:
+        sequence: an ActionStepSequence msg.
+
+    Returns: [Landmark] A list of landmarks that are cloud landmarks.
+    '''
+    landmarks = {}  # Maps db_ids to Landmark
+    for step in sequence.seq:
+        if step.type == ActionStep.ARM_TARGET:
+            r_arm_state = step.armTarget.rArm
+            l_arm_state = step.armTarget.lArm
+            if r_arm_state.refFrame == ArmState.OBJECT:
+                r_landmark = r_arm_state.refFrameLandmark
+                if r_landmark.type == Landmark.CLOUD_BOX:
+                    landmarks[r_landmark.db_id] = r_landmark
+            if l_arm_state.refFrame == ArmState.OBJECT:
+                l_landmark = l_arm_state.refFrameLandmark
+                if l_landmark.type == Landmark.CLOUD_BOX:
+                    landmarks[l_landmark.db_id] = l_landmark
+    return copy.deepcopy(landmarks.values())
+
 # ######################################################################
 # Classes
 # ######################################################################
@@ -153,7 +178,7 @@ class ProgrammedAction:
             ActionStep
         '''
         return copy.deepcopy(action_step)
-        
+
     @staticmethod
     def _copy_arm_state(arm_state):
         '''Returns a copy of arm_state.
@@ -539,20 +564,7 @@ class ProgrammedAction:
 
         Returns: [Landmark] A list of landmarks that are cloud landmarks.
         '''
-        landmarks = {}  # Maps db_ids to Landmark
-        for step in self.seq.seq:
-            if step.type == ActionStep.ARM_TARGET:
-                r_arm_state = step.armTarget.rArm
-                l_arm_state = step.armTarget.lArm
-                if r_arm_state.refFrame == ArmState.OBJECT:
-                    r_landmark = r_arm_state.refFrameLandmark
-                    if r_landmark.type == Landmark.CLOUD_BOX:
-                        landmarks[r_landmark.db_id] = r_landmark
-                if l_arm_state.refFrame == ArmState.OBJECT:
-                    l_landmark = l_arm_state.refFrameLandmark
-                    if l_landmark.type == Landmark.CLOUD_BOX:
-                        landmarks[l_landmark.db_id] = l_landmark
-        return copy.deepcopy(landmarks.values())
+        return custom_landmarks_from_sequence(self.seq)
 
     def get_gripper_states(self, arm_index):
         '''Returns the gripper states for all action steps for arm
