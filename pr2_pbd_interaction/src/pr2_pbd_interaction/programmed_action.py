@@ -49,7 +49,7 @@ TOPIC_BAG_SEQ = 'sequence'  # used when saving
 BASE_LINK = 'base_link'
 
 
-def custom_landmarks_from_sequence(self, sequence):
+def custom_landmarks_from_sequence(sequence):
     '''Returns a list of custom landmarks referenced in the given
     ActionStepSequence.
 
