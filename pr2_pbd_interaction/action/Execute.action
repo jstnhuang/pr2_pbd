@@ -1,6 +1,12 @@
 # Executes a PbD action.
 
 string action_id # ID in MongoDB database of action to execute
+# An optional set of landmarks asserted in the scene.
+# This is primarily for custom landmarks.
+# If a landmark in this list has a db_id, then PbD will not search for a landmark with that db_id in the scene.
+# Instead, it will take the pose directly from this list.
+# Adding other types of landmarks (tabletop segmentation) will have no effect.
+pr2_pbd_interaction/Landmark[] landmarks
 ---
 string error # Error message
 ---

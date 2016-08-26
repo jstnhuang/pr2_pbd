@@ -729,13 +729,19 @@ class Interaction:
         '''
         return responses
 
-    def _execute_action(self, __=None):
+    def _execute_action(self, __=None, preregistered_landmarks=[]):
         '''Starts the execution of the current action.
 
         This saves the action before starting it.
 
         Args:
             __ (Landmark): unused, default: None
+            preregistered_landmarks: A list of Landmarks.
+                Landmarks in this list are expected to be custom landmarks
+                with a db_id. We will skip searching for these landmarks.
+                Other landmarks that are part of the action that are not
+                pre-registered must be searched for using
+                custom_landmark_finder.
 
         Returns:
             [str, int]: a speech response and a GazeGoal.* constant
@@ -769,10 +775,16 @@ class Interaction:
         rospy.loginfo('Custom landmarks: {}'.format(
             ', '.join([l.name for l in custom_landmarks])))
         if len(custom_landmarks) > 0:
+            preregistered_landmarks = {}
+            for landmark in pregistered_landmarks:
+                preregistered_landmarks[landmark.db_id] = landmark
             registered_landmarks = {}  # Maps db_ids to Landmarks
             for landmark in custom_landmarks:
                 # Just in case custom_landmarks() returns duplicates
                 if landmark.db_id in registered_landmarks:
+                    continue
+                if landmark.db_id in preregistered_landmarks:
+                    registered_landmarks[landmark.db_id] = preregistered_landmarks[landmark.db_id]
                     continue
 
                 # Move head to look at where the custom landmark was at
@@ -808,7 +820,8 @@ class Interaction:
                                                landmark.db_id)
                 self._world.add_landmark(world_landmark)
 
-        if current_action.is_tabletop_object_required() or len(custom_landmarks) > 0:
+        if current_action.is_tabletop_object_required() or len(
+            custom_landmarks) > 0:
             current_action.update_objects(self._world.get_frame_list())
 
         self.arms.start_execution(current_action, EXECUTION_Z_OFFSET)
