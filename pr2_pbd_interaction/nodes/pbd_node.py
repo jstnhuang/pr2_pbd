@@ -15,6 +15,7 @@ from pr2_pbd_interaction import ExecuteActionServer
 from pr2_pbd_interaction import Interaction
 from pr2_pbd_interaction import Session
 from pr2_pbd_interaction import World
+from pr2_pbd_interaction.srv import GetLandmarksForAction
 from pr2_pbd_interaction.srv import ExecuteActionById
 from tabletop_object_detector.srv import TabletopSegmentation
 import pr2_pbd_interaction
@@ -75,6 +76,7 @@ if __name__ == '__main__':
     # Server that outputs custom landmarks used in an action.
     action_landmarks_server = ActionLandmarksServer(action_db)
     get_landmarks_for_action = rospy.Service('pr2_pbd/landmarks_for_action',
+                                             GetLandmarksForAction,
                                              action_landmarks_server.serve)
 
     # Actionlib server to execute PbD actions.
