@@ -1,7 +1,6 @@
 """A server to get a list of custom landmarks for a given PbD action.
 """
 from pr2_pbd_interaction.srv import GetLandmarksForActionResponse
-from pr2_pbd_interaction.msg import ProgrammedAction
 import programmed_action
 
 
