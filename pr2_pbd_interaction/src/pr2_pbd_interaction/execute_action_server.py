@@ -29,8 +29,8 @@ class ExecuteActionServer(object):
         """Callback for serving Execute action requests.
         """
         self._interaction.switch_to_action_by_id(goal.action_id)
-        response_params = self._interaction._execute_action()
-        rospy.loginfo('response: {}'.format(response_params[0]))
+        response_params = self._interaction._execute_action(
+            preregistered_landmarks=goal.landmarks)
         if RobotSpeech.START_EXECUTION not in response_params[0]:
             result = ExecuteResult()
             result.error = response_params[0]
