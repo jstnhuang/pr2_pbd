@@ -776,7 +776,7 @@ class Interaction:
             ', '.join([l.name for l in custom_landmarks])))
         if len(custom_landmarks) > 0:
             preregistered_landmarks = {}
-            for landmark in pregistered_landmarks:
+            for landmark in preregistered_landmarks:
                 preregistered_landmarks[landmark.db_id] = landmark
             registered_landmarks = {}  # Maps db_ids to Landmarks
             for landmark in custom_landmarks:
