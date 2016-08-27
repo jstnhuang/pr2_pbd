@@ -774,17 +774,19 @@ class Interaction:
         custom_landmarks = current_action.custom_landmarks()
         rospy.loginfo('Custom landmarks: {}'.format(
             ', '.join([l.name for l in custom_landmarks])))
+        prereg_str = ', '.join(['{} ({})'.format(l.name, l.db_id) for l in preregistered_landmarks])
+        rospy.loginfo('Pre-registered landmarks: {}'.format(prereg_str))
         if len(custom_landmarks) > 0:
-            preregistered_landmarks = {}
+            preregistered = {}
             for landmark in preregistered_landmarks:
-                preregistered_landmarks[landmark.db_id] = landmark
+                preregistered[landmark.db_id] = landmark
             registered_landmarks = {}  # Maps db_ids to Landmarks
             for landmark in custom_landmarks:
                 # Just in case custom_landmarks() returns duplicates
                 if landmark.db_id in registered_landmarks:
                     continue
-                if landmark.db_id in preregistered_landmarks:
-                    registered_landmarks[landmark.db_id] = preregistered_landmarks[landmark.db_id]
+                if landmark.db_id in preregistered:
+                    registered_landmarks[landmark.db_id] = preregistered[landmark.db_id]
                     continue
 
                 # Move head to look at where the custom landmark was at
