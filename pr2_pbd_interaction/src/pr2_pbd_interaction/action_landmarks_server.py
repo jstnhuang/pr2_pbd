@@ -14,6 +14,10 @@ class ActionLandmarksServer(object):
         self._action_db = action_db
 
     def serve(self, req):
+        if req.action_id is None or req.action_id == '':
+            response = GetLandmarksForActionResponse()
+            return response
+
         action = self._action_db.find(req.action_id)
         custom_landmarks = programmed_action.custom_landmarks_from_sequence(
             action.sequence)
