@@ -40,6 +40,20 @@ class ExecuteActionServer(object):
             response.respond()
             return
 
+        # Wait for it to start executing for at most 10 seconds
+        rate = rospy.Rate(10)
+        start = rospy.Time.now()
+        timeout = rospy.Duration(10)
+        while not self._interaction.arms.is_executing():
+            elapsed_time = rospy.Time.now() - start
+            if elapsed_time > timeout:
+                rospy.logwarn('PbD action did not start after 10 seconds')
+                result = ExecuteResult()
+                result.error = 'PbD action did not start after 10 seconds'
+                self._server.set_aborted(result=result, text=result.error)
+                break
+            rate.sleep()
+
         response = Response(self._interaction._empty_response, response_params)
         response.respond()
         rate = rospy.Rate(10)
@@ -63,8 +77,14 @@ class ExecuteActionServer(object):
             result = ExecuteResult()
             result.error = error
             self._server.set_aborted(result=result, text=error)
-        else:  # NO_IK, other statuses are not used in practice
+        elif self._interaction.arms.status == ExecutionStatus.NO_IK:
             error = 'The robot\'s arms couldn\'t reach some poses.'
+            result = ExecuteResult()
+            result.error = error
+            self._server.set_aborted(result=result, text=error)
+        else:
+            error = 'Unknown error {} running the PbD action'.format(
+                self._interaction.arms.status)
             result = ExecuteResult()
             result.error = error
             self._server.set_aborted(result=result, text=error)
