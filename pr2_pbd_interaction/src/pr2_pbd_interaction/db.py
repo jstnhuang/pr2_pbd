@@ -93,6 +93,7 @@ class ActionDatabase(object):
         try:
             res = self._find(req)
         except rospy.ServiceException as e:
+            rospy.logerr('ServiceException in find!')
             rospy.logerr(e)
             return None
 
