@@ -72,6 +72,9 @@ class ExecuteActionServer(object):
 
         if self._interaction.arms.status == ExecutionStatus.SUCCEEDED:
             self._server.set_succeeded()
+        elif self._interaction.arms.status == ExecutionStatus.NOT_EXECUTING:
+            # Race condition? Assume this means success.
+            self._server.set_succeeded()
         elif self._interaction.arms.status == ExecutionStatus.PREEMPTED:
             error = 'The PbD action was preempted.'
             result = ExecuteResult()

@@ -89,7 +89,14 @@ class ActionDatabase(object):
         req.collection.db = self._db_name
         req.collection.collection = self._collection_name
         req.id = db_id
-        res = self._find(req)
+        rospy.loginfo('Finding action ID: {}'.format(db_id))
+        try:
+            res = self._find(req)
+        except rospy.ServiceException as e:
+            rospy.logerr('ServiceException in find!')
+            rospy.logerr(e)
+            return None
+
         if res.matched_count == 0:
             rospy.logerr(
                 'Action with ID {} not found, unable to retrieve.'.format(

@@ -751,7 +751,7 @@ class Interaction:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
         # We must have also recorded steps (/poses/frames) in it.
-        if self.session.n_frames() <= 1:
+        if self.session.n_frames() < 1:
             return [RobotSpeech.EXECUTION_ERROR_NOPOSES + ' ' +
                     str(self.session.current_action_id), GazeGoal.SHAKE]
 

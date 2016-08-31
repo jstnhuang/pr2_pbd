@@ -19,6 +19,9 @@ class ActionLandmarksServer(object):
             return response
 
         action = self._action_db.find(req.action_id)
+        if action is None:
+            response = GetLandmarksForActionResponse()
+            return response
         custom_landmarks = programmed_action.custom_landmarks_from_sequence(
             action.sequence)
         response = GetLandmarksForActionResponse()
