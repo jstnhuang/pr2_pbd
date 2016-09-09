@@ -85,6 +85,15 @@ class WorldLandmark:
         """
         return WorldLandmark(name, pose, dimensions, db_id)
 
+    @staticmethod
+    def from_msg(msg):
+        """Construct from a Landmark msg.
+        """
+        db_id = None
+        if msg.db_id is not None and msg.db_id != '':
+            db_id = msg.db_id
+        return WorldLandmark(msg.name, msg.pose, msg.dimensions, db_id)
+
     def is_bounding_box(self):
         """Returns true if this is a bounding box type landmark."""
         return self._db_id is None

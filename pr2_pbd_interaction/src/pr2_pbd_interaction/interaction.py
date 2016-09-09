@@ -34,6 +34,7 @@ from response import Response
 from robot_speech import RobotSpeech
 from std_msgs.msg import String
 from world_landmark import WorldLandmark
+import programmed_action
 import world
 
 # ######################################################################

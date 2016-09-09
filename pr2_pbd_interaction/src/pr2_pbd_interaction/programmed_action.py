@@ -73,6 +73,31 @@ def custom_landmarks_from_sequence(sequence):
                     landmarks[l_landmark.db_id] = l_landmark
     return copy.deepcopy(landmarks.values())
 
+def landmarks_from_sequence(sequence):
+    '''Returns a list of landmarks referenced in the given
+    ActionStepSequence.
+
+    Args:
+        sequence: an ActionStepSequence msg.
+
+    Returns: [Landmark] A list of landmarks.
+    '''
+    landmarks = {}  # Maps db_ids to Landmark
+    for step in sequence.seq:
+        if step.type == ActionStep.ARM_TARGET:
+            r_arm_state = step.armTarget.rArm
+            l_arm_state = step.armTarget.lArm
+            if r_arm_state.refFrame == ArmState.OBJECT:
+                r_landmark = r_arm_state.refFrameLandmark
+                if r_landmark.type != Landmark.SURFACE:
+                    landmarks[r_landmark.name] = r_landmark
+            if l_arm_state.refFrame == ArmState.OBJECT:
+                l_landmark = l_arm_state.refFrameLandmark
+                if l_landmark.type != Landmark.SURFACE:
+                    landmarks[l_landmark.name] = l_landmark
+    return copy.deepcopy(landmarks.values())
+
+
 # ######################################################################
 # Classes
 # ######################################################################

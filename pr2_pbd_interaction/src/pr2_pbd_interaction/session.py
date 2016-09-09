@@ -16,11 +16,13 @@ import threading
 import yaml
 
 # Local
+import programmed_action
 from programmed_action import ProgrammedAction
 from pr2_arm_control.msg import Side
 from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import (GetExperimentState,
                                      GetExperimentStateResponse)
+from world_landmark import WorldLandmark
 
 # ######################################################################
 # Module level constants
@@ -290,6 +292,13 @@ class Session:
                 "Can't switch actions: failed to load action {}".format(
                     action_id))
             return False
+        if object_list is None or len(object_list) == 0:
+            current_action = self.get_current_action()
+            object_list = programmed_action.landmarks_from_sequence(current_action.seq)
+            for landmark in object_list:
+                world_landmark = WorldLandmark.from_msg(landmark)
+                self._world.add_landmark(world_landmark)
+
         self.get_current_action().initialize_viz(object_list)
         self._object_list = object_list
         self._update_experiment_state()
