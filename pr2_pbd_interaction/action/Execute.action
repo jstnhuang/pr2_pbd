@@ -1,6 +1,8 @@
 # Executes a PbD action.
 
 string action_id # ID in MongoDB database of action to execute
+string name # Name of the action, can be used to specify the action if action_id is not provided.
+
 # An optional set of landmarks asserted in the scene.
 # This is primarily for custom landmarks.
 # If a landmark in this list has a db_id, then PbD will not search for a landmark with that db_id in the scene.

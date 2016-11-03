@@ -9,11 +9,12 @@ import rospy
 
 
 class ExecuteActionServer(object):
-    def __init__(self, interaction):
+    def __init__(self, interaction, action_db):
         """Initialize this server with the interaction class.
 
         Args:
             interaction: Interaction class to use.
+            action_db: The ActionDatabase to use.
         """
         self._server = actionlib.SimpleActionServer('execute_pbd_action',
                                                     ExecuteAction,
@@ -21,6 +22,7 @@ class ExecuteActionServer(object):
                                                     auto_start=False)
         self._server.register_preempt_callback(self._preempt)
         self._interaction = interaction
+        self._action_db = action_db
 
     def start(self):
         self._server.start()
@@ -28,7 +30,12 @@ class ExecuteActionServer(object):
     def _execute(self, goal):
         """Callback for serving Execute action requests.
         """
-        self._interaction.switch_to_action_by_id(goal.action_id)
+        action_id = None
+        if goal.action_id != '':
+            action_id = goal.action_id
+        else:
+            action_id = self._action_db.id_for_name(goal.name)
+        self._interaction.switch_to_action_by_id(action_id)
         response_params = self._interaction._execute_action(
             preregistered_landmarks=goal.landmarks)
         if RobotSpeech.START_EXECUTION not in response_params[0]:

@@ -80,7 +80,7 @@ if __name__ == '__main__':
                                              action_landmarks_server.serve)
 
     # Actionlib server to execute PbD actions.
-    execute_server = ExecuteActionServer(interaction)
+    execute_server = ExecuteActionServer(interaction, action_db)
     execute_server.start()
 
     while (not rospy.is_shutdown()):

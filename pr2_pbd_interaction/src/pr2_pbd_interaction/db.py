@@ -2,6 +2,7 @@ from pr2_pbd_interaction.msg import Action
 from mongo_msg_db_msgs.msg import Message
 from mongo_msg_db_msgs.srv import Find, FindRequest
 from mongo_msg_db_msgs.srv import Insert, InsertRequest
+from mongo_msg_db_msgs.srv import List, ListRequest, ListResponse
 from mongo_msg_db_msgs.srv import Update, UpdateRequest
 from rospy_message_converter import json_message_converter
 
@@ -9,7 +10,7 @@ import rospy
 
 
 class ActionDatabase(object):
-    def __init__(self, db_name, coll_name, find, insert, update):
+    def __init__(self, db_name, coll_name, find, insert, list_srv, update):
         """Initialize this ActionDatabase.
 
         Args:
@@ -17,12 +18,14 @@ class ActionDatabase(object):
             coll_name: string, the name of the collection in the database to use.
             find: the rospy.ServiceProxy for searching the database.
             insert: the rospy.ServiceProxy for inserting into the database.
+            list_srv: the rospy.ServiceProxy for inserting into the database.
             update: the rospy.ServiceProxy for updating the database.
         """
         self._db_name = db_name
         self._collection_name = coll_name
         self._find = find
         self._insert = insert
+        self._list = list_srv
         self._update = update
         self._MSG_TYPE = 'pr2_pbd_interaction/Action'
 
@@ -34,8 +37,9 @@ class ActionDatabase(object):
         coll_name = 'actions'
         find = rospy.ServiceProxy("mongo_msg_db/find", Find)
         insert = rospy.ServiceProxy("mongo_msg_db/insert", Insert)
+        list_srv = rospy.ServiceProxy("mongo_msg_db/list", List)
         update = rospy.ServiceProxy("mongo_msg_db/update", Update)
-        d = ActionDatabase(db_name, coll_name, find, insert, update)
+        d = ActionDatabase(db_name, coll_name, find, insert, list_srv, update)
         return d
 
     def insert_new(self, action_name):
@@ -106,3 +110,17 @@ class ActionDatabase(object):
             msg_type = res.message.msg_type
             return json_message_converter.convert_json_to_ros_message(
                 msg_type, res.message.json)
+
+    def id_for_name(self, name):
+        """Looks up the ID of an action by its name.
+        """
+        req = ListRequest()
+        req.collection.db = self._db_name
+        req.collection.collection = self._collection_name
+        res = self._list(req)
+        res = ListResponse()
+        for json_msg in res.messages:
+            msg = json_message_converter.convert_json_to_ros_message(json_msg.msg_type, json_msg.json)
+            if msg.name == name:
+                return json_msg.id
+        return None
