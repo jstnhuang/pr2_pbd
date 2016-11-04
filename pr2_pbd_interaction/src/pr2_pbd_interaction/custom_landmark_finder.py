@@ -30,7 +30,7 @@ class CustomLandmarkFinder(object):
         self._find_landmark = find_landmark
         self._tf_listener = tf_listener
 
-    def find(self, db_id):
+    def find(self, db_id, name):
         """Finds a landmark given a database ID.
 
         It will read in the scene from the cloud_in topic (this should be
@@ -38,6 +38,7 @@ class CustomLandmarkFinder(object):
 
         Args:
             db_id: The MongoDB id of the landmark to search for in the scene.
+            name: The name of the landmark, used if db_id is None.
         
         Returns:
             None if there was an error, an empty array if there were no matches
@@ -47,6 +48,7 @@ class CustomLandmarkFinder(object):
         get_req = GetStaticCloudRequest()
         get_req.collection = self._collection
         get_req.id = db_id
+        get_req.name = name
         get_resp = self._static_cloud_db.serve_get_cloud(get_req)
         if get_resp.error != '':
             rospy.logerr(get_resp.error)

@@ -800,7 +800,7 @@ class Interaction:
                 rospy.sleep(2)
                 rospy.loginfo('Searching for landmark: {}, ID: {}'.format(
                     landmark.name, landmark.db_id))
-                matches = self._custom_landmark_finder.find(landmark.db_id)
+                matches = self._custom_landmark_finder.find(None, landmark.name)
                 if matches is None or len(matches) == 0:
                     rospy.logwarn(
                         'Could not find landmark: {}'.format(landmark.name))
