@@ -73,6 +73,7 @@ class Arms:
         self.preempt = False
         self.z_offset = 0.0
         self.status = ExecutionStatus.NOT_EXECUTING
+        self.last_status = None
         rospy.loginfo('Arms have been initialized.')
 
     # ##################################################################
@@ -408,10 +409,13 @@ class Arms:
             # Set status based on what happened.
             if is_successful:
                 self.status = ExecutionStatus.SUCCEEDED
+                self.last_status = ExecutionStatus.SUCCEEDED
             else:
                 self.status = ExecutionStatus.OBSTRUCTED
+                self.last_status = ExecutionStatus.OBSTRUCTED
         else:
             self.status = ExecutionStatus.NO_IK
+            self.last_status = ExecutionStatus.NO_IK
 
     def execute_action(self):
         ''' Function to replay the demonstrated two-arm action of type
@@ -423,17 +427,20 @@ class Arms:
         if action_step is None:
             rospy.logwarn("First step does not exist.")
             self.status = ExecutionStatus.CONDITION_ERROR
+            self.last_status = ExecutionStatus.CONDITION_ERROR
         # Check if the very first precondition is met.
         elif not Arms.is_condition_met(action_step.preCond):
             rospy.logwarn(
                 'First precond is not met, first make sure the robot is' +
                 'ready to execute action (hand object or free hands).')
             self.status = ExecutionStatus.CONDITION_ERROR
+            self.last_status = ExecutionStatus.CONDITION_ERROR
         else:
             # Check that all parts of the action are reachable
             if not self.solve_ik_for_action():
                 rospy.logwarn('Problem finding IK solutions.')
                 self.status = ExecutionStatus.NO_IK
+                self.last_status = ExecutionStatus.NO_IK
             else:
                 # Freeze both arms, then execute all steps in turn.
                 Arms.set_arm_mode(Side.RIGHT, ArmMode.HOLD)
@@ -446,6 +453,7 @@ class Arms:
             # If we haven't been preempted, we now report success.
             if self.status == ExecutionStatus.EXECUTING:
                 self.status = ExecutionStatus.SUCCEEDED
+                self.last_status = ExecutionStatus.SUCCEEDED
                 rospy.loginfo('Action execution has succeeded.')
 
     def move_to_joints(self, r_arm, l_arm):
@@ -563,12 +571,14 @@ class Arms:
             if action_step is None:
                 rospy.logwarn("Step " + str(i) + " does not exist.")
                 self.status = ExecutionStatus.CONDITION_ERROR
+                self.last_status = ExecutionStatus.CONDITION_ERROR
                 break
             # Check that preconditions are met
             elif not Arms.is_condition_met(action_step.preCond):
                 rospy.logwarn('\tPreconditions of action step ' + str(i) +
                               ' are not ' + 'satisfied. Aborting.')
                 self.status = ExecutionStatus.CONDITION_ERROR
+                self.last_status = ExecutionStatus.CONDITION_ERROR
                 break
             else:
                 # Try executing.
@@ -582,6 +592,7 @@ class Arms:
                     rospy.logwarn('\tPost-conditions of action step ' + str(i)
                                   + ' are not satisfied. Aborting.')
                     self.status = ExecutionStatus.CONDITION_ERROR
+                    self.last_status = ExecutionStatus.CONDITION_ERROR
                     break
 
             # Perhaps the execution was pre-empted by the user. Check
@@ -589,6 +600,7 @@ class Arms:
             if self.preempt:
                 rospy.logwarn('\tExecution preempted by user.')
                 self.status = ExecutionStatus.PREEMPTED
+                self.last_status = ExecutionStatus.PREEMPTED
                 break
 
             # Step completed successfully.
@@ -614,9 +626,11 @@ class Arms:
                 # We may have been pre-empted.
                 if self.preempt:
                     self.status = ExecutionStatus.PREEMPTED
+                    self.last_status = ExecutionStatus.PREEMPTED
                 # Otherwise, we were obstructed.
                 else:
                     self.status = ExecutionStatus.OBSTRUCTED
+                    self.last_status = ExecutionStatus.OBSTRUCTED
                 # Regardless, couldn't get to the joints; return False.
                 return False
         elif action_step.type == ActionStep.ARM_TRAJECTORY:
@@ -628,9 +642,11 @@ class Arms:
                 # We may have been pre-empted.
                 if self.preempt:
                     self.status = ExecutionStatus.PREEMPTED
+                    self.last_status = ExecutionStatus.PREEMPTED
                 # Otherwise, we were obstructed.
                 else:
                     self.status = ExecutionStatus.OBSTRUCTED
+                    self.last_status = ExecutionStatus.OBSTRUCTED
                 # Regardless, couldn't move to the start frame; return
                 # False.
                 return False
@@ -657,9 +673,11 @@ class Arms:
                 # We may have been pre-empted.
                 if self.preempt:
                     self.status = ExecutionStatus.PREEMPTED
+                    self.last_status = ExecutionStatus.PREEMPTED
                 # Otherwise, we were obstructed.
                 else:
                     self.status = ExecutionStatus.OBSTRUCTED
+                    self.last_status = ExecutionStatus.OBSTRUCTED
                 # Regardless, couldn't complete trajectory; return
                 # False.
                 return False

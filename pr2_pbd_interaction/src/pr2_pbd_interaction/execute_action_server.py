@@ -77,26 +77,35 @@ class ExecuteActionServer(object):
                 break
             rate.sleep()
 
-        if self._interaction.arms.status == ExecutionStatus.SUCCEEDED:
+        status = self._interaction.arms.last_status
+        if status == ExecutionStatus.SUCCEEDED:
+            rospy.loginfo('Execution succeeded')
             self._server.set_succeeded()
-        elif self._interaction.arms.status == ExecutionStatus.NOT_EXECUTING:
-            # Race condition? Assume this means success.
-            self._server.set_succeeded()
-        elif self._interaction.arms.status == ExecutionStatus.PREEMPTED:
+        elif status == ExecutionStatus.NOT_EXECUTING:
+            rospy.loginfo('Execution state was NOT_EXECUTING - failed?')
+            # Race condition? Assume this means failure.
+            error = 'Unable to run the PbD action.'
+            result = ExecuteResult()
+            result.error = error
+            rospy.logerr(error)
+            self._server.set_aborted(result=result, text=error)
+        elif status == ExecutionStatus.PREEMPTED:
             error = 'The PbD action was preempted.'
             result = ExecuteResult()
             result.error = error
+            rospy.logerr(error)
             self._server.set_aborted(result=result, text=error)
-        elif self._interaction.arms.status == ExecutionStatus.NO_IK:
+        elif status == ExecutionStatus.NO_IK:
             error = 'The robot\'s arms couldn\'t reach some poses.'
             result = ExecuteResult()
             result.error = error
+            rospy.logerr(error)
             self._server.set_aborted(result=result, text=error)
         else:
-            error = 'Unknown error {} running the PbD action'.format(
-                self._interaction.arms.status)
+            error = 'Unknown error {} running the PbD action'.format(status)
             result = ExecuteResult()
             result.error = error
+            rospy.logerr(error)
             self._server.set_aborted(result=result, text=error)
 
     def _preempt(self):
