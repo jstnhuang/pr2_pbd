@@ -16,7 +16,7 @@ class ActionLandmarksServer(object):
     def serve(self, req):
         action_id = req.action_id
         if req.action_id is None or req.action_id == '':
-            action_id = self._action_db.id_for_name(self, req.name)
+            action_id = self._action_db.id_for_name(req.name)
 
         action = self._action_db.find(action_id)
         if action is None:
