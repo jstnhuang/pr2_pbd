@@ -739,7 +739,7 @@ class Interaction:
             __ (Landmark): unused, default: None
             preregistered_landmarks: A list of Landmarks.
                 Landmarks in this list are expected to be custom landmarks
-                with a db_id. We will skip searching for these landmarks.
+                with a name. We will skip searching for these landmarks.
                 Other landmarks that are part of the action that are not
                 pre-registered must be searched for using
                 custom_landmark_finder.
@@ -780,14 +780,14 @@ class Interaction:
         if len(custom_landmarks) > 0:
             preregistered = {}
             for landmark in preregistered_landmarks:
-                preregistered[landmark.db_id] = landmark
+                preregistered[landmark.name] = landmark
             registered_landmarks = {}  # Maps db_ids to Landmarks
             for landmark in custom_landmarks:
                 # Just in case custom_landmarks() returns duplicates
-                if landmark.db_id in registered_landmarks:
+                if landmark.name in registered_landmarks:
                     continue
-                if landmark.db_id in preregistered:
-                    registered_landmarks[landmark.db_id] = preregistered[landmark.db_id]
+                if landmark.name in preregistered:
+                    registered_landmarks[landmark.name] = preregistered[landmark.name]
                     continue
 
                 # Move head to look at where the custom landmark was at
