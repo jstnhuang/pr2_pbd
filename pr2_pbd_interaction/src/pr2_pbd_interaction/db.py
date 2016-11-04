@@ -114,11 +114,11 @@ class ActionDatabase(object):
     def id_for_name(self, name):
         """Looks up the ID of an action by its name.
         """
+        rospy.loginfo('Looking up action name: {}'.format(name))
         req = ListRequest()
         req.collection.db = self._db_name
         req.collection.collection = self._collection_name
         res = self._list(req)
-        res = ListResponse()
         for json_msg in res.messages:
             msg = json_message_converter.convert_json_to_ros_message(json_msg.msg_type, json_msg.json)
             if msg.name == name:

@@ -1,4 +1,5 @@
 # Returns a list of custom landmarks used in a PbD action.
 string action_id # ID in MongoDB of the action.
+string name # ID in MongoDB of the action.
 ---
 pr2_pbd_interaction/Landmark[] landmarks
