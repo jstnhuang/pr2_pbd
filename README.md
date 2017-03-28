@@ -1,24 +1,27 @@
 # PR2 Programming by Demonstration
-[![Build Status](https://travis-ci.org/PR2/pr2_pbd.svg?branch=hydro-devel)](https://travis-ci.org/PR2/pr2_pbd)
+[![Build Status](https://travis-ci.org/PR2/pr2_pbd.svg?branch=indigo-devel)](https://travis-ci.org/PR2/pr2_pbd)
 [![Coverage Status](https://coveralls.io/repos/PR2/pr2_pbd/badge.png?branch=hydro-devel)](https://coveralls.io/r/PR2/pr2_pbd?branch=hydro-devel)
 
 This repository contains the work of [Maya Cakmak](http://www.mayacakmak.com/) and the [Human-Centered Robotics Lab](https://hcrlab.cs.washington.edu/) at the University of Washington. Please see those sites for citing publications. We abbreviate Programming by Demonstration with PbD.
 
 ## System Requirements
 Currently the PbD system has the following requirements:
-- Ubuntu 12.04
-- ROS Hydro
+- Ubuntu 14.04
+- ROS Indigo
 - [mongo_msg_db](https://github.com/jstnhuang/mongo_msg_db) and [mongo_msg_db_msgs](https://github.com/jstnhuang/mongo_msg_db_msgs)
 
 ## Installing
 Clone this repository and build on both your desktop machine and on the robot:
 ```bash
 cd ~/catkin_ws/src
+git clone https://github.com/hcrlab/blinky.git
 git clone https://github.com/jstnhuang/mongo_msg_db_msgs.git
 git clone https://github.com/jstnhuang/mongo_msg_db.git
+git clone https://github.com/jstnhuang/stf.git
+git clone https://github.com/jstnhuang/rapid.git
 git clone https://github.com/PR2/pr2_pbd.git
 cd ~/catkin_ws
-rosdep install --from-paths src --ignore-src --rosdistro=hydro -y
+rosdep install --from-paths src --ignore-src --rosdistro=indigo -y
 catkin_make
 ```
 
