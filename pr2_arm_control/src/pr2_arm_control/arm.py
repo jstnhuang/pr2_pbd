@@ -60,7 +60,6 @@ class Arm:
         self.switch_service = rospy.ServiceProxy(switch_controller,
                                                  SwitchController)
         rospy.loginfo('Got response from the switch controller for '
-
                       + self.side() + ' arm.')
 
         # # Create a trajectory action client
@@ -85,7 +84,6 @@ class Arm:
                                                     Pr2GripperCommandAction)
         self.gripper_client.wait_for_server()
         rospy.loginfo('Got response from gripper server for '
-
                       + self.side() + ' arm.')
         self.check_gripper_state()
 
