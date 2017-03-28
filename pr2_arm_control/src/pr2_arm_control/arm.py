@@ -59,7 +59,7 @@ class Arm:
         rospy.wait_for_service(switch_controller)
         self.switch_service = rospy.ServiceProxy(switch_controller,
                                                  SwitchController)
-        rospy.loginfo('Got response form the switch controller for '
+        rospy.loginfo('Got response from the switch controller for '
                       + self.side() + ' arm.')
 
         # # Create a trajectory action client
@@ -68,7 +68,7 @@ class Arm:
         self.traj_action_client = SimpleActionClient(
                         traj_controller_name, JointTrajectoryAction)
         self.traj_action_client.wait_for_server()
-        rospy.loginfo('Got response form trajectory action server for '
+        rospy.loginfo('Got response from trajectory action server for '
                       + self.side() + ' arm.')
 
         # Set up Inversse Kinematics
@@ -83,7 +83,7 @@ class Arm:
         self.gripper_client = SimpleActionClient(gripper_name,
                                                     Pr2GripperCommandAction)
         self.gripper_client.wait_for_server()
-        rospy.loginfo('Got response form gripper server for '
+        rospy.loginfo('Got response from gripper server for '
                       + self.side() + ' arm.')
         self.check_gripper_state()
 
