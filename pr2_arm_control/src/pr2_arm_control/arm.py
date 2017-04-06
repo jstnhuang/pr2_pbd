@@ -1,23 +1,23 @@
 ''' Interface for controlling one arm '''
-import moveit_commander
+from actionlib import SimpleActionClient
+from actionlib_msgs.msg import GoalStatus
+from geometry_msgs.msg import Quaternion, Point, Pose
 from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest
-import threading
-import rospy
-import tf
 from numpy import array, sign, pi, dot
 from numpy.linalg import norm
-from trajectory_msgs.msg import JointTrajectoryPoint
-from trajectory_msgs.msg import JointTrajectory
-from actionlib_msgs.msg import GoalStatus
-from actionlib import SimpleActionClient
-from pr2_mechanism_msgs.srv import SwitchController
+from pr2_arm_control.msg import GripperState, ArmMode, Side
 from pr2_controllers_msgs.msg import JointTrajectoryAction
 from pr2_controllers_msgs.msg import JointTrajectoryGoal
 from pr2_controllers_msgs.msg import Pr2GripperCommandAction
 from pr2_controllers_msgs.msg import Pr2GripperCommandGoal
+from pr2_mechanism_msgs.srv import SwitchController
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import Quaternion, Point, Pose
-from pr2_arm_control.msg import GripperState, ArmMode, Side
+from trajectory_msgs.msg import JointTrajectory
+from trajectory_msgs.msg import JointTrajectoryPoint
+import moveit_commander
+import rospy
+import tf
+import threading
 
 # The minimum time to allow for moving between poses.
 DURATION_MIN_THRESHOLD = 0.5  # seconds
