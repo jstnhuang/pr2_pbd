@@ -333,7 +333,7 @@ class Arm:
             return time_to_pose
 
     @staticmethod
-    def _get_time_bw_poses(pose0, pose1, velocity):
+    def _get_time_bw_poses(pose0, pose1, pbd_arm_velocity):
         '''Determines how much time should be allowed for moving between
         pose0 and pose1 at velocity.
 
