@@ -66,7 +66,7 @@ To eliminate this behavior, run MoveIt with a dummy sensor:
 </include>
 ```
 
-Where `sensors.yaml` looks like this:
+Where `sensors_dummy.yaml` looks like this:
 ```yaml
 sensors:
     - sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater
