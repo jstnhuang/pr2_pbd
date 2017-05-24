@@ -794,7 +794,7 @@ class Interaction:
                 # demonstration time -- we assume that it is roughly in the
                 # same location at run time.
                 # Assumes that the landmark pose is given in the base frame.
-                Response.force_look_at_point(landmark.pose.position)
+                #Response.force_look_at_point(landmark.pose.position)
                 if not Response.gaze_client.wait_for_result(rospy.Duration(10)):
                     rospy.logwarn('Took longer than 10 seconds to look down.')
                 rospy.sleep(2)
