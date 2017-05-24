@@ -1,24 +1,27 @@
 # PR2 Programming by Demonstration
-[![Build Status](https://travis-ci.org/PR2/pr2_pbd.svg?branch=hydro-devel)](https://travis-ci.org/PR2/pr2_pbd)
+[![Build Status](https://travis-ci.org/PR2/pr2_pbd.svg?branch=indigo-devel)](https://travis-ci.org/PR2/pr2_pbd)
 [![Coverage Status](https://coveralls.io/repos/PR2/pr2_pbd/badge.png?branch=hydro-devel)](https://coveralls.io/r/PR2/pr2_pbd?branch=hydro-devel)
 
 This repository contains the work of [Maya Cakmak](http://www.mayacakmak.com/) and the [Human-Centered Robotics Lab](https://hcrlab.cs.washington.edu/) at the University of Washington. Please see those sites for citing publications. We abbreviate Programming by Demonstration with PbD.
 
 ## System Requirements
 Currently the PbD system has the following requirements:
-- Ubuntu 12.04
-- ROS Hydro
+- Ubuntu 14.04
+- ROS Indigo
 - [mongo_msg_db](https://github.com/jstnhuang/mongo_msg_db) and [mongo_msg_db_msgs](https://github.com/jstnhuang/mongo_msg_db_msgs)
 
 ## Installing
 Clone this repository and build on both your desktop machine and on the robot:
 ```bash
 cd ~/catkin_ws/src
+git clone https://github.com/hcrlab/blinky.git
 git clone https://github.com/jstnhuang/mongo_msg_db_msgs.git
 git clone https://github.com/jstnhuang/mongo_msg_db.git
+git clone https://github.com/jstnhuang/stf.git
+git clone https://github.com/jstnhuang/rapid.git
 git clone https://github.com/PR2/pr2_pbd.git
 cd ~/catkin_ws
-rosdep install --from-paths src --ignore-src --rosdistro=hydro -y
+rosdep install --from-paths src --ignore-src --rosdistro=indigo -y
 catkin_make
 ```
 
@@ -50,6 +53,29 @@ The voice commands are not currently documented.
 ## Running in simulation (untested)
 ```bash
 roslaunch pr2_pbd_interaction pbd_simulation_stack.launch
+```
+
+## Common issues
+### Saving poses / executing actions is very slow
+If it takes a very long time to save a pose, it is likely because MoveIt is configured to automatically infer the planning scene from sensor data.
+This makes it very slow to compute IK solutions, which are used to color the gripper markers in RViz.
+To eliminate this behavior, run MoveIt with a dummy sensor:
+```xml
+<include file="$(find pr2_moveit_config)/launch/move_group.launch" machine="c2">
+  <arg name="moveit_octomap_sensor_params_file" value="$(find my_package)/config/sensors_dummy.yaml"/>
+</include>
+```
+
+Where `sensors_dummy.yaml` looks like this:
+```yaml
+sensors:
+    - sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater
+      point_cloud_topic: /head_mount_kinect/depth_registered/pointsdummy
+      max_range: 5.0
+      point_subsample: 10
+      padding_offset: 0.1
+      padding_scale: 1.0
+      filtered_cloud_topic: filtered_cloud
 ```
 
 ## Running tests (not currently working)
