@@ -17,7 +17,6 @@ cd ~/catkin_ws/src
 git clone https://github.com/hcrlab/blinky.git
 git clone https://github.com/jstnhuang/mongo_msg_db_msgs.git
 git clone https://github.com/jstnhuang/mongo_msg_db.git
-git clone https://github.com/jstnhuang/stf.git
 git clone https://github.com/jstnhuang/rapid.git
 git clone https://github.com/PR2/pr2_pbd.git
 cd ~/catkin_ws
