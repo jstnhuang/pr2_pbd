@@ -2,7 +2,7 @@ from geometry_msgs.msg import Transform
 from mongo_msg_db_msgs.msg import Collection
 from object_search_msgs.srv import SearchRequest
 from rapid_msgs.msg import StaticCloud
-from rapid_msgs.srv import GetStaticCloudRequest
+from static_cloud_db_msgs.srv import GetStaticCloudRequest
 from sensor_msgs.msg import PointCloud2
 import rospy
 import tf
